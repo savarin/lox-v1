@@ -27,7 +27,7 @@ def reallocate(array, old_size, new_size):
     """
     """
     if new_size == 0:
-        return []
+        return None
     elif old_size > new_size:
         return array[:new_size]
 

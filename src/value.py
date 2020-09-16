@@ -6,9 +6,9 @@ class ValueArray():
         #
         """
         """
-        self.values = []
-        self.capacity = 0
         self.count = 0
+        self.capacity = 0
+        self.values = None
 
     def write_value_array(self, value):
         #
@@ -31,5 +31,5 @@ class ValueArray():
         """
         """
         self.values = memory.free_array(self.values, self.capacity)
-        self.capacity = 0
         self.count = 0
+        self.capacity = 0
