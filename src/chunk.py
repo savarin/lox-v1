@@ -1,10 +1,12 @@
 from enum import Enum
 
 import memory
+import value
 
 
 class OpCode(Enum):
-    OP_RETURN = 1
+    OP_CONSTANT = 1
+    OP_RETURN = 2
 
 
 class Chunk():
@@ -15,12 +17,14 @@ class Chunk():
         self.count = 0
         self.capacity = 0
         self.code = []
+        self.constants = value.ValueArray()
 
     def free_chunk(self):
         #
         """
         """
-        self.code = memory.free_array(self.code, self.count)
+        self.code = memory.free_array(self.code, self.capacity)
+        self.constants.free_value_array()
         self.count = 0
         self.capacity = 0
 
@@ -39,3 +43,10 @@ class Chunk():
 
         self.code[self.count] = byte
         self.count += 1
+
+    def add_constant(self, value):
+        #
+        """
+        """
+        self.constants.write_value_array(value)
+        return self.constants.count - 1
