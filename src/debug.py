@@ -17,6 +17,13 @@ def disassemble_instruction(bytecode, offset):
     #
     """
     """
+    print("{:04d}".format(offset), end=" ")
+
+    if offset > 0 and bytecode.lines[offset] == bytecode.lines[offset - 1]:
+        print("   |", end=" ")
+    else:
+        print("{:4d}".format(bytecode.lines[offset]), end=" ")
+
     instruction = bytecode.code[offset]
 
     if instruction == chunk.OpCode.OP_CONSTANT:
@@ -24,7 +31,7 @@ def disassemble_instruction(bytecode, offset):
     if instruction == chunk.OpCode.OP_RETURN:
         return simple_instruction("OP_RETURN", offset)
 
-    print("{:04d} Unknown opcode {}".format(offset, instruction))
+    print("Unknown opcode {}".format(instruction))
     return offset + 1
 
 
@@ -32,7 +39,7 @@ def simple_instruction(name, offset):
     #
     """
     """
-    print("{:04d} {}".format(offset, name))
+    print("{}".format(name))
     return offset + 1
 
 
@@ -41,6 +48,6 @@ def constant_instruction(name, bytecode, offset):
     """
     """
     constant = bytecode.code[offset + 1]
-    print("{:04d} {:16s} {:04d} {}".format(
-        offset, name, constant, bytecode.constants.values[constant]))
+    print("{:16s} {:4d} '{}'".format(name, constant,
+                                     bytecode.constants.values[constant]))
     return offset + 2
