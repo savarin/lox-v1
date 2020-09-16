@@ -1,4 +1,3 @@
-
 def grow_capacity(capacity):
     #
     """
