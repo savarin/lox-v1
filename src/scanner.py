@@ -193,10 +193,63 @@ class Scanner():
 
             return None
 
+    def check_keyword(self, start, length, rest, token_type):
+        #
+        """
+        """
+        index = self.start + start
+
+        if (self.current - self.start == start +
+                length) and (self.source[index:index + length] == rest):
+            return token_type
+
     def identifier_type(self):
         #
         """
         """
+        char = self.source[self.start]
+
+        if char == "a":
+            return self.check_keyword(1, 2, "nd", TokenType.TOKEN_AND)
+        elif char == "c":
+            return self.check_keyword(1, 4, "lass", TokenType.TOKEN_CLASS)
+        elif char == "e":
+            return self.check_keyword(1, 3, "lse", TokenType.TOKEN_ELSE)
+        elif char == "i":
+            return self.check_keyword(1, 1, "f", TokenType.TOKEN_IF)
+        elif char == "l":
+            return self.check_keyword(1, 2, "et", TokenType.TOKEN_VAR)
+        elif char == "n":
+            return self.check_keyword(1, 2, "il", TokenType.TOKEN_NIL)
+        elif char == "o":
+            return self.check_keyword(1, 1, "r", TokenType.TOKEN_OR)
+        elif char == "p":
+            return self.check_keyword(1, 4, "rint", TokenType.TOKEN_PRINT)
+        elif char == "r":
+            return self.check_keyword(1, 5, "eturn", TokenType.TOKEN_RETURN)
+        elif char == "s":
+            return self.check_keyword(1, 4, "uper", TokenType.TOKEN_SUPER)
+        elif char == "w":
+            return self.check_keyword(1, 4, "hile", TokenType.TOKEN_WHILE)
+
+        elif char == "f":
+            if self.current - self.start > 1:
+                next_char = self.source[self.start + 1]
+                if next_char == "a":
+                    return self.check_keyword(2, 3, "lse", TOKEN_FALSE)
+                if next_char == "o":
+                    return self.check_keyword(2, 1, "r", TOKEN_FOR)
+                if next_char == "u":
+                    return self.check_keyword(2, 1, "n", TOKEN_FUN)
+
+        elif char == "t":
+            if self.current - self.start > 1:
+                next_char = self.source[self.start + 1]
+                if next_char == "h":
+                    return self.check_keyword(2, 2, "is", TOKEN_THIS)
+                if next_char == "r":
+                    return self.check_keyword(2, 2, "ue", TOKEN_TRUE)
+
         return TokenType.TOKEN_IDENTIFIER
 
     def identifier(self):
