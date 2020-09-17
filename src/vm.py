@@ -1,6 +1,7 @@
 from enum import Enum
 
 import chunk
+import compiler
 
 STACK_MAX = 16
 
@@ -41,14 +42,12 @@ class VM():
         self.stack_top -= 1
         return self.stack[self.stack_top]
 
-    def interpret(self, bytecode):
-        #
+    def interpret(self, source):
+        # type: (str) -> InterpretResult
         """
         """
-        self.chunk = bytecode
-        self.ip = 0
-
-        return self.run()
+        compiler.compile(source)
+        return InterpretResult.INTERPRET_OK
 
     def run(self):
         #

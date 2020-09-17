@@ -31,5 +31,6 @@ def reallocate(array, old_size, new_size):
     elif old_size > new_size:
         return array[:new_size]
 
+    # Create empty list if array is None
     array = array or []
     return array + (new_size - old_size) * [None]
