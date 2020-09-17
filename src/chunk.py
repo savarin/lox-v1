@@ -6,7 +6,12 @@ import value
 
 class OpCode(Enum):
     OP_CONSTANT = 1
-    OP_RETURN = 2
+    OP_ADD = 2
+    OP_SUBTRACT = 3
+    OP_MULTIPLY = 4
+    OP_DIVIDE = 5
+    OP_NEGATE = 6
+    OP_RETURN = 7
 
 
 class Chunk():

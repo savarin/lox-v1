@@ -28,7 +28,17 @@ def disassemble_instruction(bytecode, offset):
 
     if instruction == chunk.OpCode.OP_CONSTANT:
         return constant_instruction("OP_CONSTANT", bytecode, offset)
-    if instruction == chunk.OpCode.OP_RETURN:
+    elif instruction == chunk.OpCode.OP_ADD:
+        return simple_instruction("OP_ADD", offset)
+    elif instruction == chunk.OpCode.OP_SUBTRACT:
+        return simple_instruction("OP_SUBTRACT", offset)
+    elif instruction == chunk.OpCode.OP_MULTIPLY:
+        return simple_instruction("OP_MULTIPLY", offset)
+    elif instruction == chunk.OpCode.OP_DIVIDE:
+        return simple_instruction("OP_DIVIDE", offset)
+    elif instruction == chunk.OpCode.OP_NEGATE:
+        return simple_instruction("OP_NEGATE", offset)
+    elif instruction == chunk.OpCode.OP_RETURN:
         return simple_instruction("OP_RETURN", offset)
 
     print("Unknown opcode {}".format(instruction))
