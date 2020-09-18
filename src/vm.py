@@ -46,8 +46,17 @@ class VM():
         # type: (str) -> InterpretResult
         """
         """
-        compiler.compile(source)
-        return InterpretResult.INTERPRET_OK
+        bytecode = chunk.Chunk()
+
+        if not compiler.compile(source):
+            bytecode.free_chunk()
+            return InterpretResult.INTERPRET_COMPILE_ERROR
+
+        self.chunk = chunk
+        result = self.run()
+
+        self.chunk.free_chunk()
+        return result
 
     def run(self):
         #

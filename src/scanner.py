@@ -295,7 +295,7 @@ class Scanner():
         return self.make_token(TokenType.TOKEN_STRING)
 
     def scan_token(self):
-        #
+        # type: () -> Token
         """
         """
         self.skip_whitespace()
