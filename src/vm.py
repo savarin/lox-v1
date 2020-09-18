@@ -17,7 +17,7 @@ class VM():
         #
         """
         """
-        self.chunk = None
+        self.bytecode = None
         self.ip = 0
         self.stack = [None] * STACK_MAX
         self.stack_top = 0
@@ -48,14 +48,16 @@ class VM():
         """
         bytecode = chunk.Chunk()
 
-        if not compiler.compile(source):
+        if not compiler.compile(source, bytecode):
             bytecode.free_chunk()
             return InterpretResult.INTERPRET_COMPILE_ERROR
 
-        self.chunk = chunk
+        self.bytecode = bytecode
+        self.ip = 0  # book refers to pointer of bytecode.code
+
         result = self.run()
 
-        self.chunk.free_chunk()
+        self.bytecode.free_chunk()
         return result
 
     def run(self):
@@ -65,10 +67,10 @@ class VM():
 
         def read_byte():
             self.ip += 1
-            return self.chunk.code[self.ip - 1]
+            return self.bytecode.code[self.ip - 1]
 
         def read_constant():
-            return self.chunk.constants.values[read_byte()]
+            return self.bytecode.constants.values[read_byte()]
 
         def binary_op(op):
             b = self.pop()
