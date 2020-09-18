@@ -7,11 +7,12 @@ if TYPE_CHECKING:
 
 
 class Parser():
-    def __init__(self, reader):
+    def __init__(self, reader, bytecode):
         #
         """
         """
         self.reader = reader
+        self.bytecode = bytecode
         self.current = None
         self.previous = None
         self.had_error = False
@@ -40,6 +41,31 @@ class Parser():
             return None
 
         self.error_at_current(message)
+
+    def emit_byte(self, byte):
+        #
+        """
+        """
+        self.bytecode.write_chunk(byte, self.previous.line)
+
+    def emit_bytes(self, byte1, byte2):
+        #
+        """
+        """
+        self.emit_byte(byte1)
+        self.emit_byte(byte2)
+
+    def emit_return(self):
+        #
+        """
+        """
+        self.emit_byte(chunk.OpCode.OP_RETURN)
+
+    def end_compiler(self):
+        #
+        """
+        """
+        self.emit_return()
 
     def error_at_current(self, message):
         #
@@ -82,10 +108,12 @@ def compile(source, bytecode):
     """
     """
     reader = scanner.Scanner(source)
-    viewer = Parser(reader)
+    # compiling_chunk = bytecode
+    viewer = Parser(reader, bytecode)
 
     viewer.advance()
     expression()
     consume(scanner.TokenType.TOKEN_EOF, "Expect end of expression.")
+    end_compiler()
 
     return not viewer.had_error
