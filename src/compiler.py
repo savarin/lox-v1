@@ -4,6 +4,7 @@ from typing import Any
 import chunk
 import debug
 import scanner
+import value
 
 DEBUG_PRINT_CODE = True
 
@@ -178,11 +179,11 @@ class Parser():
         """
         self.emit_byte(chunk.OpCode.OP_RETURN)
 
-    def make_constant(self, value):
+    def make_constant(self, val):
         #
         """
         """
-        constant = self.current_chunk().add_constant(value)
+        constant = self.current_chunk().add_constant(val)
 
         if constant > UINT8_MAX:
             self.error("Too many constants in one chunk.")
@@ -190,11 +191,11 @@ class Parser():
 
         return constant
 
-    def emit_constant(self, value):
+    def emit_constant(self, val):
         #
         """
         """
-        self.emit_bytes(chunk.OpCode.OP_CONSTANT, self.make_constant(value))
+        self.emit_bytes(chunk.OpCode.OP_CONSTANT, self.make_constant(val))
 
     def end_compiler(self):
         #
@@ -242,8 +243,8 @@ class Parser():
         #
         """
         """
-        value = float(self.previous.source)
-        self.emit_constant(value)
+        val = float(self.previous.source)
+        self.emit_constant(value.number_val(val))
 
     def unary(self):
         #

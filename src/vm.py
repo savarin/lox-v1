@@ -28,6 +28,12 @@ class VM():
         """
         pass
 
+    def reset_stack(self):
+        #
+        """
+        """
+        self.stack_top = 0
+
     def push(self, value):
         #
         """
@@ -41,6 +47,12 @@ class VM():
         """
         self.stack_top -= 1
         return self.stack[self.stack_top]
+
+    def peek(self, distance):
+        #
+        """
+        """
+        return self.stack[self.stack_top - 1 - distance]
 
     def interpret(self, source):
         # type: (str) -> InterpretResult
@@ -97,7 +109,11 @@ class VM():
                 binary_op("/")
 
             elif instruction == chunk.OpCode.OP_NEGATE:
-                self.push(-self.pop())
+                if not self.peek(0).is_number():
+                    self.runtime_error("Operand must be a number")
+                    return InterpretResult.INTERPRET_RUNTIME_ERROR
+
+                self.push(-self.pop().as_number())
 
             elif instruction == chunk.OpCode.OP_RETURN:
                 print("{}".format(self.pop()))
