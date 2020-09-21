@@ -4,15 +4,16 @@ from typing import Union
 import memory
 
 
-class ObjectType(enum):
+class ObjectType(Enum):
     OBJ_STRING = "OBJ_STRING"
 
 
 class Object():
-    def __init__(self, object_type):
+    def __init__(self, object_type, obj):
         #
         """Not create obj.py to avoid circular dependencies."""
         self.object_type = object_type
+        self.obj = obj
 
     def is_object_type(self, object_type):
         #
@@ -27,14 +28,49 @@ class Object():
         return self.is_object_type(ObjectType.OBJ_STRING)
 
 
+def allocate_object(size, object_type):
+    #
+    """
+    """
+    return Object(
+        object_type=object_type,
+        obj=memory.reallocate(None, 0, size),
+    )
+
+
 class ObjectString():
-    def __init__(self, chars):
+    def __init__(self, obj):
         #
         """
         """
-        self.obj = Object(ObjectType.OBJ_STRING)
-        self.length = len(chars)
-        self.chars = chars
+        self.obj = obj
+        self.length = 0
+        self.chars = obj.obj
+        self.obj.obj = None
+
+
+def copy_string(chars, length):
+    # type: (str, int) -> ObjectString
+    """Copies existing string and calls allocate_string."""
+    heap_chars = memory.allocate(length + 1)
+
+    heap_chars[:length] = chars[:length]
+    heap_chars[length] = "\0"
+
+    return allocate_string(heap_chars, length)
+
+
+def allocate_string(chars, length):
+    # type: (str, int) -> ObjectString
+    """Creates ObjectString from Object and copies chars. Note length represents
+    length of characters excluding end of string token."""
+    obj = allocate_object(length + 1, ObjectType.OBJ_STRING)
+
+    string = ObjectString(obj)
+    string.chars[:len(chars)] = chars
+    string.length = length
+
+    return string
 
 
 class ValueType(Enum):
@@ -120,6 +156,13 @@ class Value():
         assert self.is_string()
         return self.value_as.chars
 
+    def print_object(self):
+        #
+        """
+        """
+        if self.is_string():
+            print(self.as_cstring())
+
     def print_value(self):
         # type: () -> None
         """
@@ -131,6 +174,8 @@ class Value():
             print("nil")
         elif self.value_type == ValueType.VAL_NUMBER:
             print("{}", self.as_number)
+        elif self.value_type == ValueType.VAL_OBJ:
+            self.print_object()
 
     def values_equal(self, other):
         #
@@ -145,6 +190,11 @@ class Value():
             return True
         elif self.value_type == ValueType.VAL_NUMBER:
             return self.as_number() == other.as_number()
+        elif self.value_type == ValueType.VAL_OBJ:
+            self_string = self.as_string()
+            other_string = other.as_string()
+            return (self_string.length == other_string.length
+                    and self_string.chars == other_string.chars)
 
         return False
 

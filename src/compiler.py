@@ -59,7 +59,7 @@ rule_map = {
     "TOKEN_LESS":          [None,       "binary", "PREC_COMPARISON"],
     "TOKEN_LESS_EQUAL":    [None,       "binary", "PREC_COMPARISON"],
     "TOKEN_IDENTIFIER":    [None,       None,     "PREC_NONE"],
-    "TOKEN_STRING":        [None,       None,     "PREC_NONE"],
+    "TOKEN_STRING":        ["string",   None,     "PREC_NONE"],
     "TOKEN_NUMBER":        ["number",   None,     "PREC_NONE"],
     "TOKEN_AND":           [None,       None,     "PREC_NONE"],
     "TOKEN_CLASS":         [None,       None,     "PREC_NONE"],
@@ -269,6 +269,15 @@ class Parser():
         val = float(self.previous.source)
         self.emit_constant(value.number_val(val))
 
+    def string(self):
+        #
+        """
+        """
+        chars = self.previous.source[self.previous.start + 1:]
+        val = value.copy_string(chars, self.previous.length - 2)
+
+        self.emit_constant(value.obj_val(val))
+
     def unary(self):
         #
         """
@@ -290,7 +299,6 @@ class Parser():
         """
         self.advance()
         prefix_rule = self.get_rule(self.previous.token_type).prefix
-        # breakpoint()
 
         if prefix_rule is None:
             self.error("Expect expression")
@@ -316,6 +324,7 @@ class Parser():
             "grouping": self.grouping,
             "literal": self.literal,
             "number": self.number,
+            "string": self.string,
             "unary": self.unary,
         }
 

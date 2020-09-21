@@ -1,3 +1,10 @@
+def allocate(count):
+    #
+    """
+    """
+    return reallocate(None, 0, count)
+
+
 def grow_capacity(capacity):
     #
     """
