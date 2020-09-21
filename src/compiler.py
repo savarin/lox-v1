@@ -2,10 +2,15 @@ from enum import Enum
 from typing import Any
 
 import chunk
+import debug
 import scanner
+
+DEBUG_PRINT_CODE = True
 
 UINT8_MAX = 256
 
+
+# yapf: disable
 class Precedence(Enum):
     PREC_NONE = 1
     PREC_ASSIGNMENT = 2  # =
@@ -18,6 +23,7 @@ class Precedence(Enum):
     PREC_UNARY = 9       # ! -
     PREC_CALL = 10       # . ()
     PREC_PRIMARY = 11
+# yapf: enable
 
 
 class ParseRule():
@@ -30,7 +36,7 @@ class ParseRule():
         self.precedence = precedence
 
 
-# Refer to Parser.get_rule
+# yapf: disable
 rule_map = {
     "TOKEN_LEFT_PAREN":    ["grouping", None,     "PREC_NONE"],
     "TOKEN_RIGHT_PAREN":   [None,       None,     "PREC_NONE"],
@@ -73,6 +79,7 @@ rule_map = {
     "TOKEN_ERROR":         [None,       None,     "PREC_NONE"],
     "TOKEN_EOF":           [None,       None,     "PREC_NONE"],
 }
+# yapf: enable
 
 
 class Parser():
@@ -195,6 +202,9 @@ class Parser():
         """
         self.emit_return()
 
+        if DEBUG_PRINT_CODE and not self.had_error:
+            debug.disassemble_chunk(self.current_chunk(), "code")
+
     def binary(self):
         #
         """
@@ -232,14 +242,14 @@ class Parser():
         #
         """
         """
-        value = float(self.previous.start)
+        value = float(self.previous.source)
         self.emit_constant(value)
 
     def unary(self):
         #
         """
         """
-        operator_type = self.previous.type
+        operator_type = self.previous.token_type
 
         # Compile the operand
         self.parse_precedence(Precedence.PREC_UNARY)
@@ -261,7 +271,8 @@ class Parser():
 
         prefix_rule()
 
-        while precedence.value <= self.get_rule(self.current.token_type).precedence.value:  # WARNING - precedence is pointer
+        while precedence.value <= self.get_rule(
+                self.current.token_type).precedence.value:
             self.advance()
             infix_rule = self.get_rule(self.previous.token_type).infix
 

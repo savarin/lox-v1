@@ -64,7 +64,6 @@ class VM():
         #
         """
         """
-
         def read_byte():
             self.ip += 1
             return self.bytecode.code[self.ip - 1]

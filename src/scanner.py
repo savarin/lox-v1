@@ -52,13 +52,14 @@ class TokenType(Enum):
 
 
 class Token():
-    def __init__(self, token_type, start, length, line):
+    def __init__(self, token_type, start, length, source, line):
         # type: (TokenType, int, int, int) -> None
         """
         """
         self.token_type = token_type
         self.start = start
         self.length = length
+        self.source = source
         self.line = line
 
 
@@ -153,6 +154,7 @@ class Scanner():
             token_type=token_type,
             start=self.start,
             length=self.current - self.start,
+            source=self.source[self.start:self.current],
             line=self.line,
         )
 
