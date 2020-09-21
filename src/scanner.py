@@ -238,19 +238,20 @@ class Scanner():
             if self.current - self.start > 1:
                 next_char = self.source[self.start + 1]
                 if next_char == "a":
-                    return self.check_keyword(2, 3, "lse", TOKEN_FALSE)
+                    return self.check_keyword(2, 3, "lse",
+                                              TokenType.TOKEN_FALSE)
                 if next_char == "o":
-                    return self.check_keyword(2, 1, "r", TOKEN_FOR)
+                    return self.check_keyword(2, 1, "r", TokenType.TOKEN_FOR)
                 if next_char == "u":
-                    return self.check_keyword(2, 1, "n", TOKEN_FUN)
+                    return self.check_keyword(2, 1, "n", TokenType.TOKEN_FUN)
 
         elif char == "t":
             if self.current - self.start > 1:
                 next_char = self.source[self.start + 1]
                 if next_char == "h":
-                    return self.check_keyword(2, 2, "is", TOKEN_THIS)
+                    return self.check_keyword(2, 2, "is", TokenType.TOKEN_THIS)
                 if next_char == "r":
-                    return self.check_keyword(2, 2, "ue", TOKEN_TRUE)
+                    return self.check_keyword(2, 2, "ue", TokenType.TOKEN_TRUE)
 
         return TokenType.TOKEN_IDENTIFIER
 

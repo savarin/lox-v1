@@ -2,6 +2,7 @@ from enum import Enum
 
 import chunk
 import compiler
+import value
 
 STACK_MAX = 16
 
@@ -34,6 +35,15 @@ class VM():
         """
         self.stack_top = 0
 
+    def runtime_error(self, messages):
+        # type: (Union[str, List[str]]) -> None
+        """
+        """
+        print(messages if isinstance(messages, str) else " ".join(messages))
+        print("[line {} in script]".format(self.bytecode.line))
+
+        self.reset_stack()
+
     def push(self, value):
         #
         """
@@ -53,6 +63,12 @@ class VM():
         """
         """
         return self.stack[self.stack_top - 1 - distance]
+
+    def is_falsey(self, val):
+        #
+        """
+        """
+        return val.is_nil() or (val.is_bool() and not val.as_bool())
 
     def interpret(self, source):
         # type: (str) -> InterpretResult
@@ -83,11 +99,15 @@ class VM():
         def read_constant():
             return self.bytecode.constants.values[read_byte()]
 
-        def binary_op(op):
-            b = self.pop()
-            a = self.pop()
+        def binary_op(value_type, op):
+            if not self.peek(0).is_number() or not self.peek(1).is_number():
+                self.runtime_error("Operands must be numbers.")
+                return InterpretResult.INTERPRET_RUNTIME_ERROR
 
-            self.push(eval("a {} b".format(op)))
+            b = self.pop().as_number()
+            a = self.pop().as_number()
+
+            self.push(value_type(eval("a {} b".format(op))))
 
         while True:
             instruction = read_byte()
@@ -96,25 +116,48 @@ class VM():
                 constant = read_constant()
                 self.push(constant)
 
+            elif instruction == chunk.OpCode.OP_NIL:
+                self.push(value.nil_val())
+
+            elif instruction == chunk.OpCode.OP_TRUE:
+                self.push(value.bool_val(True))
+
+            elif instruction == chunk.OpCode.OP_FALSE:
+                self.push(value.bool_val(False))
+
+            elif instruction == chunk.OpCode.OP_EQUAL:
+                b = self.pop()
+                a = self.pop()
+                self.push(value.bool_val(a.values_equal(b)))
+
+            elif instruction == chunk.OpCode.OP_GREATER:
+                binary_op(value.bool_val, ">")
+
+            elif instruction == chunk.OpCode.OP_LESS:
+                binary_op(value.bool_val, "<")
+
             elif instruction == chunk.OpCode.OP_ADD:
-                binary_op("+")
+                binary_op(value.number_val, "+")
 
             elif instruction == chunk.OpCode.OP_SUBTRACT:
-                binary_op("-")
+                binary_op(value.number_val, "-")
 
             elif instruction == chunk.OpCode.OP_MULTIPLY:
-                binary_op("*")
+                binary_op(value.number_val, "*")
 
             elif instruction == chunk.OpCode.OP_DIVIDE:
-                binary_op("/")
+                binary_op(value.number_val, "/")
+
+            elif instruction == chunk.OpCode.OP_NOT:
+                self.push(value.bool_val(self.is_falsey(self.pop())))
 
             elif instruction == chunk.OpCode.OP_NEGATE:
                 if not self.peek(0).is_number():
                     self.runtime_error("Operand must be a number")
                     return InterpretResult.INTERPRET_RUNTIME_ERROR
 
-                self.push(-self.pop().as_number())
+                self.push(value.number_val(-self.pop().as_number()))
 
             elif instruction == chunk.OpCode.OP_RETURN:
-                print("{}".format(self.pop()))
+                self.pop().print_value()
                 return InterpretResult.INTERPRET_OK

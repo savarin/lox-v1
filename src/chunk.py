@@ -6,10 +6,17 @@ import value
 
 class OpCode(Enum):
     OP_CONSTANT = "OP_CONSTANT"
+    OP_NIL = "OP_NIL"
+    OP_TRUE = "OP_TRUE"
+    OP_FALSE = "OP_FALSE"
+    OP_EQUAL = "OP_EQUAL"
+    OP_GREATER = "OP_GREATER"
+    OP_LESS = "OP_LESS"
     OP_ADD = "OP_ADD"
     OP_SUBTRACT = "OP_SUBTRACT"
     OP_MULTIPLY = "OP_MULTIPLY"
     OP_DIVIDE = "OP_DIVIDE"
+    OP_NOT = "OP_NOT"
     OP_NEGATE = "OP_NEGATE"
     OP_RETURN = "OP_RETURN"
 

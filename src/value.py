@@ -3,6 +3,7 @@ from typing import Union
 
 import memory
 
+
 class ValueType(Enum):
     VAL_BOOL = "VAL_BOOL"
     VAL_NIL = "VAL_NIL"
@@ -24,39 +25,61 @@ class Value():
         #
         """
         """
-        return value.value_type == ValueType.VAL_BOOL
+        return self.value_type == ValueType.VAL_BOOL
 
     def is_nil(self):
         #
         """
         """
-        return value.value_type == ValueType.VAL_NIL
+        return self.value_type == ValueType.VAL_NIL
 
     def is_number(self):
         #
         """
         """
-        return value.value_type == ValueType.VAL_NUMBER
+        return self.value_type == ValueType.VAL_NUMBER
 
     def as_bool(self):
         # type: () -> bool
         """
         """
         assert self.is_bool()
-        return value.value_as
+        return self.value_as
 
     def as_number(self):
         # type: () -> float
         """
         """
         assert self.is_number()
-        return value.value_as
+        return self.value_as
 
     def print_value(self):
         # type: () -> None
         """
         """
-        print("{}", self.as_number)
+        if self.value_type == ValueType.VAL_BOOL:
+            val = self.as_bool()
+            print("true" if val else "false")
+        elif self.value_type == ValueType.VAL_NIL:
+            print("nil")
+        elif self.value_type == ValueType.VAL_NUMBER:
+            print("{}", self.as_number)
+
+    def values_equal(self, other):
+        #
+        """
+        """
+        if self.value_type != other.value_type:
+            return False
+
+        if self.value_type == ValueType.VAL_BOOL:
+            return self.as_bool() == other.as_bool()
+        elif self.value_type == ValueType.VAL_NIL:
+            return True
+        elif self.value_type == ValueType.VAL_NUMBER:
+            return self.as_number() == other.as_number()
+
+        return False
 
 
 def bool_val(value):
@@ -66,7 +89,7 @@ def bool_val(value):
     return Value(ValueType.VAL_BOOL, value)
 
 
-def nil_val(value):
+def nil_val():
     #
     """
     """

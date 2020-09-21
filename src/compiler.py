@@ -50,31 +50,31 @@ rule_map = {
     "TOKEN_SEMICOLON":     [None,       None,     "PREC_NONE"],
     "TOKEN_SLASH":         [None,       "binary", "PREC_FACTOR"],
     "TOKEN_STAR":          [None,       "binary", "PREC_FACTOR"],
-    "TOKEN_BANG":          [None,       None,     "PREC_NONE"],
-    "TOKEN_BANG_EQUAL":    [None,       None,     "PREC_NONE"],
+    "TOKEN_BANG":          ["unary",    None,     "PREC_NONE"],
+    "TOKEN_BANG_EQUAL":    [None,       "binary", "PREC_EQUALITY"],
     "TOKEN_EQUAL":         [None,       None,     "PREC_NONE"],
-    "TOKEN_EQUAL_EQUAL":   [None,       None,     "PREC_NONE"],
-    "TOKEN_GREATER":       [None,       None,     "PREC_NONE"],
-    "TOKEN_GREATER_EQUAL": [None,       None,     "PREC_NONE"],
-    "TOKEN_LESS":          [None,       None,     "PREC_NONE"],
-    "TOKEN_LESS_EQUAL":    [None,       None,     "PREC_NONE"],
+    "TOKEN_EQUAL_EQUAL":   [None,       "binary", "PREC_EQUALITY"],
+    "TOKEN_GREATER":       [None,       "binary", "PREC_COMPARISON"],
+    "TOKEN_GREATER_EQUAL": [None,       "binary", "PREC_COMPARISON"],
+    "TOKEN_LESS":          [None,       "binary", "PREC_COMPARISON"],
+    "TOKEN_LESS_EQUAL":    [None,       "binary", "PREC_COMPARISON"],
     "TOKEN_IDENTIFIER":    [None,       None,     "PREC_NONE"],
     "TOKEN_STRING":        [None,       None,     "PREC_NONE"],
     "TOKEN_NUMBER":        ["number",   None,     "PREC_NONE"],
     "TOKEN_AND":           [None,       None,     "PREC_NONE"],
     "TOKEN_CLASS":         [None,       None,     "PREC_NONE"],
     "TOKEN_ELSE":          [None,       None,     "PREC_NONE"],
-    "TOKEN_FALSE":         [None,       None,     "PREC_NONE"],
+    "TOKEN_FALSE":         ["literal",  None,     "PREC_NONE"],
     "TOKEN_FOR":           [None,       None,     "PREC_NONE"],
     "TOKEN_FUN":           [None,       None,     "PREC_NONE"],
     "TOKEN_IF":            [None,       None,     "PREC_NONE"],
-    "TOKEN_NIL":           [None,       None,     "PREC_NONE"],
+    "TOKEN_NIL":           ["literal",  None,     "PREC_NONE"],
     "TOKEN_OR":            [None,       None,     "PREC_NONE"],
     "TOKEN_PRINT":         [None,       None,     "PREC_NONE"],
     "TOKEN_RETURN":        [None,       None,     "PREC_NONE"],
     "TOKEN_SUPER":         [None,       None,     "PREC_NONE"],
     "TOKEN_THIS":          [None,       None,     "PREC_NONE"],
-    "TOKEN_TRUE":          [None,       None,     "PREC_NONE"],
+    "TOKEN_TRUE":          ["literal",  None,     "PREC_NONE"],
     "TOKEN_VAR":           [None,       None,     "PREC_NONE"],
     "TOKEN_WHILE":         [None,       None,     "PREC_NONE"],
     "TOKEN_ERROR":         [None,       None,     "PREC_NONE"],
@@ -119,7 +119,7 @@ class Parser():
         else:
             current_token = self.reader.source[token.start:(token.start +
                                                             token.length)]
-            print("at {}".format(current_token), end=" ")
+            print("at {}".format(current_token), end="")
 
         print(": {}".format(message))
         self.had_error = True
@@ -220,7 +220,19 @@ class Parser():
         precedence = Precedence(rule.precedence.value + 1)
         self.parse_precedence(precedence)
 
-        if operator_type == scanner.TokenType.TOKEN_PLUS:
+        if operator_type == scanner.TokenType.TOKEN_BANG_EQUAL:
+            self.emit_bytes(chunk.OpCode.OP_EQUAL, chunk.OpCode.OP_NOT)
+        elif operator_type == scanner.TokenType.TOKEN_EQUAL_EQUAL:
+            self.emit_byte(chunk.OpCode.OP_EQUAL)
+        elif operator_type == scanner.TokenType.TOKEN_GREATER:
+            self.emit_byte(chunk.OpCode.OP_GREATER)
+        elif operator_type == scanner.TokenType.TOKEN_GREATER_EQUAL:
+            self.emit_bytes(chunk.OpCode.OP_LESS, chunk.OpCode.OP_NOT)
+        elif operator_type == scanner.TokenType.TOKEN_LESS:
+            self.emit_byte(chunk.OpCode.OP_LESS)
+        elif operator_type == scanner.TokenType.TOKEN_LESS_EQUAL:
+            self.emit_bytes(chunk.OpCode.OP_GREATER, chunk.OpCode.OP_NOT)
+        elif operator_type == scanner.TokenType.TOKEN_PLUS:
             self.emit_byte(chunk.OpCode.OP_ADD)
         elif operator_type == scanner.TokenType.TOKEN_MINUS:
             self.emit_byte(chunk.OpCode.OP_SUBTRACT)
@@ -228,6 +240,17 @@ class Parser():
             self.emit_byte(chunk.OpCode.OP_MULTIPLY)
         elif operator_type == scanner.TokenType.TOKEN_SLASH:
             self.emit_byte(chunk.OpCode.OP_DIVIDE)
+
+    def literal(self):
+        #
+        """
+        """
+        if self.previous.token_type == scanner.TokenType.TOKEN_FALSE:
+            self.emit_byte(chunk.OpCode.OP_FALSE)
+        elif self.previous.token_type == scanner.TokenType.TOKEN_NIL:
+            self.emit_byte(chunk.OpCode.OP_NIL)
+        elif self.previous.token_type == scanner.TokenType.TOKEN_TRUE:
+            self.emit_byte(chunk.OpCode.OP_TRUE)
 
     def grouping(self):
         #
@@ -256,7 +279,9 @@ class Parser():
         self.parse_precedence(Precedence.PREC_UNARY)
 
         # Emit the operator instruction
-        if operator_type == scanner.TokenType.TOKEN_MINUS:
+        if operator_type == scanner.TokenType.TOKEN_BANG:
+            self.emit_byte(chunk.OpCode.OP_NOT)
+        elif operator_type == scanner.TokenType.TOKEN_MINUS:
             self.emit_byte(chunk.OpCode.OP_NEGATE)
 
     def parse_precedence(self, precedence):
@@ -265,6 +290,7 @@ class Parser():
         """
         self.advance()
         prefix_rule = self.get_rule(self.previous.token_type).prefix
+        # breakpoint()
 
         if prefix_rule is None:
             self.error("Expect expression")
@@ -288,6 +314,7 @@ class Parser():
         type_map = {
             "binary": self.binary,
             "grouping": self.grouping,
+            "literal": self.literal,
             "number": self.number,
             "unary": self.unary,
         }
