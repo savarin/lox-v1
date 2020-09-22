@@ -1,3 +1,4 @@
+import memory
 import value
 
 TABLE_MAX_LOAD = 0.75
@@ -132,3 +133,25 @@ def table_add_all(table_from, table_to):
 
         if not entry.key is None:
             table_set(table_to, entry.key, entry.value)
+
+
+def table_find_string(table, chars, length, hash_value):
+    """
+    """
+    if table.count == 0:
+        return None
+
+    index = hash_value % table.capacity
+
+    while True:
+        entry = table.entries[index]
+
+        if entry.key is None:
+            # Stop if empty non-tombstone entry found
+            if entry.value.is_nil():
+                return None
+            elif (entry.key.length == length and entry.key.hash_value == hash_value
+                    and entry.key.chars == chars):
+                return entry.key
+
+        index = (index + 1) % table.capacity

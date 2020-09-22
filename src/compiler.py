@@ -275,7 +275,7 @@ class Parser():
         """
         """
         # Start from position after quote
-        chars = self.previous.source[1:]
+        chars = self.previous.source[1:self.previous.length - 1]
 
         # End from position before quote and end of string token
         val = obj.copy_string(chars, self.previous.length - 2)
@@ -351,7 +351,7 @@ def compile(source, bytecode):
     # type: (str, chunk.Chunk) -> None
     """KIV change this to Compiler class with method compile."""
     reader = scanner.Scanner(source)
-    parser = Parser(reader, bytecode)
+    parser = Parser(reader=reader, bytecode=bytecode)
 
     parser.advance()
     parser.expression()

@@ -25,7 +25,7 @@ class VM():
         self.ip = 0
         self.stack = [None] * STACK_MAX
         self.stack_top = 0
-        self.strings = table.Table()
+        self.strings = obj.strings
 
     def free_vm(self):
         #

@@ -123,10 +123,7 @@ class Value():
         elif self.value_type == ValueType.VAL_NUMBER:
             return self.as_number() == other.as_number()
         elif self.value_type == ValueType.VAL_OBJ:
-            self_string = self.as_string()
-            other_string = other.as_string()
-            return (self_string.length == other_string.length
-                    and self_string.chars == other_string.chars)
+            return self.as_obj() == other.as_obj()
 
         return False
 

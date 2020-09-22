@@ -1,11 +1,15 @@
 from enum import Enum
 
 import memory
+import table
+import value
 
 FNV_32_INIT = 2166136261
 FNV_32_PRIME = 16777619
 FNV_32_SIZE = 2**32
 
+
+strings = table.Table()
 
 class ObjectType(Enum):
     OBJ_STRING = "OBJ_STRING"
@@ -59,7 +63,13 @@ def take_string(chars, length):
     """Applies for concatenation. Takes ownership of characters passed as
     argument, since no need for copy of characters on the heap.
     """
-    hash_value = hash_string(bytes("".join(chars), "UTF-8"), length)
+    hash_value = hash_string(chars, length)
+    interned = table.table_find_string(strings, chars, length, hash_value)
+
+    if not interned is None:
+        chars = memory.free_array(chars, length + 1)
+        return interned
+
     return allocate_string(chars, length, hash_value)
 
 
@@ -68,7 +78,12 @@ def copy_string(chars, length):
     """Copies existing string and calls allocate_string. Assumes ownership of
     characters passed as argument cannot be taken away, so creates a copy. This
     is desired when characters are in the middle of the source string"""
-    hash_value = hash_string(bytes("".join(chars), "UTF-8"), length)
+    hash_value = hash_string(chars, length)
+    interned = table.table_find_string(strings, chars, length, hash_value)
+
+    if not interned is None:
+        return interned
+
     heap_chars = memory.allocate(length + 1)
 
     heap_chars[:length] = chars[:length]
@@ -88,14 +103,17 @@ def allocate_string(chars, length, hash_value):
     string.length = length
     string.hash_value = hash_value
 
+    table.table_set(strings, string, value.nil_val())
+
     return string
 
 
-def hash_string(key, length):
+def hash_string(chars, length):
     #
     """
     """
     hash_int = FNV_32_INIT
+    key = bytes("".join(chars), "UTF-8")
 
     for i in range(length):
         hash_int = hash_int ^ key[i]
