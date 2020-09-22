@@ -49,9 +49,19 @@ class ObjectString():
         self.obj.obj = None
 
 
+def take_string(chars, length):
+    #
+    """Applies for concatenation. Takes ownership of characters passed as
+    argument, since no need for copy of characters on the heap.
+    """
+    return allocate_string(chars, length)
+
+
 def copy_string(chars, length):
     # type: (str, int) -> ObjectString
-    """Copies existing string and calls allocate_string."""
+    """Copies existing string and calls allocate_string. Assumes ownership of
+    characters passed as argument cannot be taken away, so creates a copy. This
+    is desired when characters are in the middle of the source string"""
     heap_chars = memory.allocate(length + 1)
 
     heap_chars[:length] = chars[:length]

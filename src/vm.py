@@ -2,6 +2,7 @@ from enum import Enum
 
 import chunk
 import compiler
+import memory
 import value
 
 STACK_MAX = 16
@@ -70,6 +71,23 @@ class VM():
         """
         return val.is_nil() or (val.is_bool() and not val.as_bool())
 
+    def concatenate(self):
+        #
+        """
+        """
+        b = self.pop().as_string()
+        a = self.pop().as_string()
+
+        length = a.length + b.length
+        chars = memory.allocate(length + 1)
+
+        chars[:a.length] = a.chars[:a.length]
+        chars[a.length:(a.length + b.length)] = b.chars[:b.length]
+        chars[length] = "\0"
+
+        result = value.take_string(chars, length)
+        self.push(value.obj_val(result))
+
     def interpret(self, source):
         # type: (str) -> InterpretResult
         """
@@ -137,7 +155,16 @@ class VM():
                 binary_op(value.bool_val, "<")
 
             elif instruction == chunk.OpCode.OP_ADD:
-                binary_op(value.number_val, "+")
+                if self.peek(0).is_string() and self.peek(1).is_string():
+                    self.concatenate()
+                elif self.peek(0).is_number() and self.peek(1).is_number():
+                    b = self.pop().as_number()
+                    a = self.pop().as_number()
+                    self.push(value.number_val(a + b))
+                else:
+                    self.runtime_error(
+                        "Operands must be two numbers or two strings.")
+                    return InterpretResult.INTERPRET_RUNTIME_ERROR
 
             elif instruction == chunk.OpCode.OP_SUBTRACT:
                 binary_op(value.number_val, "-")

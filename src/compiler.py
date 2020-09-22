@@ -273,7 +273,10 @@ class Parser():
         #
         """
         """
-        chars = self.previous.source[self.previous.start + 1:]
+        # Start from position after quote
+        chars = self.previous.source[1:]
+
+        # End from position before quote and end of string token
         val = value.copy_string(chars, self.previous.length - 2)
 
         self.emit_constant(value.obj_val(val))
