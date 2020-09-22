@@ -3,6 +3,13 @@ import pytest
 from src import value
 
 
+def test_hash_string():
+    #
+    """
+    """
+    assert value.hash_string(b"fnv", 3) == 0xb2f5cb99
+
+
 @pytest.fixture
 def array():
     #

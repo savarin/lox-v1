@@ -3,6 +3,8 @@ from enum import Enum
 import chunk
 import compiler
 import memory
+import obj
+import table
 import value
 
 STACK_MAX = 16
@@ -23,12 +25,13 @@ class VM():
         self.ip = 0
         self.stack = [None] * STACK_MAX
         self.stack_top = 0
+        self.strings = table.Table()
 
     def free_vm(self):
         #
         """
         """
-        pass
+        self.strings.free_table()
 
     def reset_stack(self):
         #
@@ -85,7 +88,7 @@ class VM():
         chars[a.length:(a.length + b.length)] = b.chars[:b.length]
         chars[length] = "\0"
 
-        result = value.take_string(chars, length)
+        result = obj.take_string(chars, length)
         self.push(value.obj_val(result))
 
     def interpret(self, source):
