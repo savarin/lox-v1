@@ -2,14 +2,14 @@ from enum import Enum
 from typing import Any
 
 import memory
-import table
+# import table
 import value
 
 FNV_32_INIT = 2166136261
 FNV_32_PRIME = 16777619
 FNV_32_SIZE = 2**32
 
-strings = table.Table()
+# strings = table.Table()
 
 
 class ObjectType(Enum):
@@ -62,11 +62,11 @@ def take_string(chars, length):
     argument, since no need for copy of characters on the heap.
     """
     hash_value = hash_string(chars, length)
-    interned = table.table_find_string(strings, chars, length, hash_value)
+    # interned = table.table_find_string(strings, chars, length, hash_value)
 
-    if not interned is None:
-        chars = memory.free_array(chars, length + 1)
-        return interned
+    # if not interned is None:
+    #     chars = memory.free_array(chars, length + 1)
+    #     return interned
 
     return allocate_string(chars, length, hash_value)
 
@@ -75,12 +75,12 @@ def copy_string(chars, length):
     # type: (str, int) -> ObjectString
     """Copies existing string and calls allocate_string. Assumes ownership of
     characters passed as argument cannot be taken away, so creates a copy. This
-    is desired when characters are in the middle of the source string"""
+    is desired as characters may be in the middle of the source string"""
     hash_value = hash_string(chars, length)
-    interned = table.table_find_string(strings, chars, length, hash_value)
+    # interned = table.table_find_string(strings, chars, length, hash_value)
 
-    if not interned is None:
-        return interned
+    # if not interned is None:
+    #     return interned
 
     heap_chars = memory.allocate(length + 1)
 
@@ -101,7 +101,7 @@ def allocate_string(chars, length, hash_value):
     string.length = length
     string.hash_value = hash_value
 
-    table.table_set(strings, string, value.nil_val())
+    # table.table_set(strings, string, value.nil_val())
 
     return string
 
