@@ -1,6 +1,14 @@
 from src import memory
 
 
+def test_allocate():
+    # type: () -> None
+    """Checks allocate creates empty array as intended."""
+    assert memory.allocate(0) is None
+    assert memory.allocate(8) == [None] * 8
+    assert memory.allocate(16) == [None] * 16
+
+
 def test_grow_capacity():
     #
     """

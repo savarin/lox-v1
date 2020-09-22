@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any
+from typing import Any, List, Optional
 
 import memory
 # import table
@@ -91,7 +91,7 @@ def copy_string(chars, length):
 
 
 def allocate_string(chars, length, hash_value):
-    # type: (str, int, Any) -> ObjectString
+    # type: (List[Optional[str]], int, Any) -> ObjectString
     """Creates ObjectString from Object and copies chars. Note length represents
     length of characters excluding end of string token."""
     obj = allocate_object(length + 1, ObjectType.OBJ_STRING)
