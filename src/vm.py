@@ -3,7 +3,6 @@ from enum import Enum
 import chunk
 import compiler
 import memory
-import obj
 import table
 import value
 
@@ -89,7 +88,7 @@ class VM():
         chars[a.length:(a.length + b.length)] = b.chars[:b.length]
         chars[length] = "\0"
 
-        result = obj.take_string(chars, length)
+        result = value.take_string(chars, length)
         self.push(value.obj_val(result))
 
     def interpret(self, source):

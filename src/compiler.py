@@ -3,7 +3,6 @@ from typing import Any
 
 import chunk
 import debug
-import obj
 import scanner
 import value
 
@@ -278,7 +277,7 @@ class Parser():
         chars = self.previous.source[1:self.previous.length - 1]
 
         # End from position before quote and end of string token
-        val = obj.copy_string(chars, self.previous.length - 2)
+        val = value.copy_string(chars, self.previous.length - 2)
 
         self.emit_constant(value.obj_val(val))
 

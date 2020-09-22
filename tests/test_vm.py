@@ -1,4 +1,3 @@
-from src import obj
 from src import value
 from src import vm
 
@@ -7,8 +6,8 @@ def test_concatenate():
     #
     """
     """
-    a = value.obj_val(obj.take_string("str", 3))
-    b = value.obj_val(obj.take_string("ing", 3))
+    a = value.obj_val(value.take_string("str", 3))
+    b = value.obj_val(value.take_string("ing", 3))
 
     emulator = vm.VM()
     emulator.push(a)
