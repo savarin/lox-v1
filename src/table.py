@@ -30,11 +30,125 @@ class Table():
         self.count = 0
         self.capacity = 0
 
+    def find_entry(self, key):
+        # type: (ObjectString) -> Optional[Entry]
+        """Table method to retrieve Entry with matching key."""
+        return find_entry(self.entries, self.capacity, key)
+
+    def adjust_capacity(self, capacity):
+        # type: (int) -> None
+        """Change size of table to given capacity."""
+        entries = memory.allocate(capacity)
+
+        for i in range(capacity):
+            entries[i] = Entry(key=None, val=value.nil_val())
+
+        self.count = 0
+
+        for j in range(self.capacity):
+            entry = self.entries[j]
+
+            if entry.key is None:
+                continue
+
+            dest = self.find_entry(entry.key)
+            dest.key = entry.key
+            dest.value = entry.value
+            self.count += 1
+
+        self.entries = memory.free.array(self.entries, self.capacity)
+        self.entries = entries
+        self.capacity = capacity
+
+    def table_get(self, key):
+        # type: (ObjectString) -> Optional[Any]
+        """Retrieves value for matching key. Implementation differs from text
+        since text sets the return value to a pointer.
+        """
+        if self.count == 0:
+            return None
+
+        entry = self.find_entry(key)
+
+        if entry.key is None:
+            return None
+
+        return entry.value
+
+    def table_set(self, key, val):
+        # type: (ObjectString, Any) -> bool
+        """Insert key-value pair as Entry in Table."""
+        if self.count + 1 > self.capacity * TABLE_MAX_LOAD:
+            capacity = memory.grow_capacity(self.capacity)
+            self.adjust_capacity(capacity)
+
+        entry = self.find_entry(key)
+        is_new_key = entry.key == None
+
+        if is_new_key and entry.value.is_nil():
+            self.count += 1
+
+        entry.key = key
+        entry.value = val
+
+        return is_new_key
+
+    def table_delete(self, key):
+        # type: (ObjectString) -> bool
+        """Removes Entry with given key and place a tombstone in the entry."""
+        if self.count == 0:
+            return False
+
+        # Find the entry
+        entry = self.find_entry(key)
+
+        if entry.key is None:
+            return False
+
+        # Place a tombstone in the entry
+        entry.key = None
+        entry.value = value.bool_val(True)
+
+        return True
+
+    def table_add_all(self, other):
+        # type: (Table) -> None
+        """Transfer all Entries in other Table to current table."""
+        for i in range(other.capacity):
+            entry = other.entries[i]
+
+            if not entry.key is None:
+                self.table_set(entry.key, entry.value)
+
+    def table_find_string(chars, length, hash_value):
+        # type: (List[Entry], int, int) -> Optional[ObjectString]
+        """Retrieves key in table that matches the ObjectString arguments."""
+        if self.count == 0:
+            return None
+
+        index = hash_value % self.capacity
+
+        while True:
+            entry = self.entries[index]
+            key = entry.key
+
+            if key is None:
+                # Stop if empty non-tombstone entry found
+                if entry.value.is_nil():
+                    return None
+                elif (key.length == length
+                      and key.hash_value == hash_value
+                      and key.chars == chars):
+                    return key
+
+            index = (index + 1) % self.capacity
+
 
 def find_entry(entries, capacity, key):
-    #
-    """
-    """
+    # type: (List[Entry], int, ObjectString) -> Optional[Entry]
+    """Given ObjectString key, retrieve Entry in Table with the matching key.
+    Separate function created (instead of a class method) since adjust_capacity
+    requires retrieval of non-current Table."""
     index = key.hash_value % capacity
     tombstone = None
 
@@ -55,104 +169,3 @@ def find_entry(entries, capacity, key):
             return entry
 
         index = (index + 1) % capacity
-
-
-def adjust_capacity(table, capacity):
-    #
-    """
-    """
-    entries = memory.allocate(capacity)
-
-    for i in range(capacity):
-        entries[i] = Entry(None, value.nil_val())
-
-    table.count = 0
-
-    for j in range(table.capacity):
-        entry = table.entries[j]
-
-        if entry.key is None:
-            continue
-
-        dest = find_entry(entries, capacity, entry.key)
-        dest.key = entry.key
-        dest.value = entry.value
-        table.count += 1
-
-    table.entries = memory.free_array(table.entries, table.capacity)
-    table.entries = entries
-    table.capacity = capacity
-
-
-def table_set(table, key, val):
-    #
-    """
-    """
-    if table.count + 1 > table.capacity * TABLE_MAX_LOAD:
-        capacity = memory.grow_capacity(table.capacity)
-        adjust_capacity(table, capacity)
-
-    entry = find_entry(table.entries, table.capacity, key)
-    is_new_key = entry.key == None
-
-    if is_new_key and entry.value.is_nil():
-        table.count += 1
-
-    entry.key = key
-    entry.value = val
-
-    return is_new_key
-
-
-def table_delete(table, key):
-    #
-    """
-    """
-    if table.count == 0:
-        return False
-
-    # Find the entry
-    entry = find_entry(table.entries, table.capacity, key)
-
-    if entry.key is None:
-        return False
-
-    # Place a tombstone in the entry
-    entry.key = None
-    entry.value = value.bool_val(True)
-
-    return True
-
-
-def table_add_all(table_from, table_to):
-    #
-    """
-    """
-    for i in range(table_from.capacity):
-        entry = table_from.entries[i]
-
-        if not entry.key is None:
-            table_set(table_to, entry.key, entry.value)
-
-
-def table_find_string(table, chars, length, hash_value):
-    """
-    """
-    if table.count == 0:
-        return None
-
-    index = hash_value % table.capacity
-
-    while True:
-        entry = table.entries[index]
-
-        if entry.key is None:
-            # Stop if empty non-tombstone entry found
-            if entry.value.is_nil():
-                return None
-            elif (entry.key.length == length
-                  and entry.key.hash_value == hash_value
-                  and entry.key.chars == chars):
-                return entry.key
-
-        index = (index + 1) % table.capacity

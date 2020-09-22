@@ -57,7 +57,7 @@ class ObjectString():
 
 
 def take_string(chars, length):
-    #
+    # type: (List[str], int) -> ObjectString
     """Applies for concatenation. Takes ownership of characters passed as
     argument, since no need for copy of characters on the heap.
     """
@@ -76,22 +76,23 @@ def copy_string(chars, length):
     """Copies existing string and calls allocate_string. Assumes ownership of
     characters passed as argument cannot be taken away, so creates a copy. This
     is desired as characters may be in the middle of the source string"""
-    hash_value = hash_string(chars, length)
-    # interned = table.table_find_string(strings, chars, length, hash_value)
-
-    # if not interned is None:
-    #     return interned
-
     heap_chars = memory.allocate(length + 1)
 
     heap_chars[:length] = chars[:length]
     heap_chars[length] = "\0"
 
+    hash_value = hash_string(heap_chars, length)
+
+    # interned = table.table_find_string(strings, chars, length, hash_value)
+
+    # if not interned is None:
+    #     return interned
+
     return allocate_string(heap_chars, length, hash_value)
 
 
 def allocate_string(chars, length, hash_value):
-    # type: (List[Optional[str]], int, Any) -> ObjectString
+    # type: (List[str], int, Any) -> ObjectString
     """Creates ObjectString from Object and copies chars. Note length represents
     length of characters excluding end of string token."""
     obj = allocate_object(length + 1, ObjectType.OBJ_STRING)
@@ -107,8 +108,9 @@ def allocate_string(chars, length, hash_value):
 
 
 def hash_string(chars, length):
-    #
-    """
+    # type: (List[str], int) -> int
+    """Applies FNV-1a to character string.
+    http://www.isthe.com/chongo/tech/comp/fnv/#FNV-1
     """
     hash_int = FNV_32_INIT
     key = bytes("".join(chars), "UTF-8")
