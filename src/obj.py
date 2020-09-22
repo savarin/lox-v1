@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Any
 
 import memory
 import table
@@ -8,8 +9,8 @@ FNV_32_INIT = 2166136261
 FNV_32_PRIME = 16777619
 FNV_32_SIZE = 2**32
 
-
 strings = table.Table()
+
 
 class ObjectType(Enum):
     OBJ_STRING = "OBJ_STRING"
@@ -17,21 +18,19 @@ class ObjectType(Enum):
 
 class Object():
     def __init__(self, object_type, obj):
-        #
-        """Not create obj.py to avoid circular dependencies."""
+        # type: (ObjectType, Any)
+        """Initialize Object."""
         self.object_type = object_type
         self.obj = obj
 
     def is_object_type(self, object_type):
-        #
-        """
-        """
+        # type: (ObjectType) -> bool
+        """Checks if Object type matches argument."""
         return self.object_type == object_type
 
     def is_string(self):
-        #
-        """
-        """
+        # type: () -> bool
+        """Checks if Object version is string."""
         return self.is_object_type(ObjectType.OBJ_STRING)
 
 
@@ -47,9 +46,8 @@ def allocate_object(size, object_type):
 
 class ObjectString():
     def __init__(self, obj):
-        #
-        """
-        """
+        # type: (Object) -> None
+        """Initialize string version of Object."""
         self.obj = obj
         self.length = 0
         self.chars = obj.obj

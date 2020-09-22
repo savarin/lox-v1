@@ -150,8 +150,9 @@ def table_find_string(table, chars, length, hash_value):
             # Stop if empty non-tombstone entry found
             if entry.value.is_nil():
                 return None
-            elif (entry.key.length == length and entry.key.hash_value == hash_value
-                    and entry.key.chars == chars):
+            elif (entry.key.length == length
+                  and entry.key.hash_value == hash_value
+                  and entry.key.chars == chars):
                 return entry.key
 
         index = (index + 1) % table.capacity

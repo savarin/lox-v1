@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Union
+from typing import Any, Union
 
 import memory
 import obj
@@ -42,9 +42,8 @@ class Value():
         return self.value_type == ValueType.VAL_NUMBER
 
     def is_obj(self):
-        #
-        """
-        """
+        # type: () -> bool
+        """Check if Value is an Object."""
         return self.value_type == ValueType.VAL_OBJ
 
     def is_string(self):
@@ -68,23 +67,21 @@ class Value():
         return self.value_as
 
     def as_obj(self):
-        #
+        # type: () -> obj.Object
         """
         """
         assert self.is_obj()
         return self.value_as
 
     def as_string(self):
-        #
-        """
-        """
+        # type: () -> obj.ObjectString
+        """Unwraps Value to return ObjectString."""
         assert self.is_string()
         return self.value_as
 
     def as_cstring(self):
-        #
-        """
-        """
+        # type: () -> str
+        """Unwraps Value to return raw string of ObjectString."""
         assert self.is_string()
         return self.value_as.chars
 
@@ -157,9 +154,8 @@ def number_val(val):
 
 
 def obj_val(val):
-    #
-    """
-    """
+    # type: (Any) -> Value
+    """Wraps Object in a Value."""
     return Value(ValueType.VAL_OBJ, val)
 
 

@@ -271,9 +271,9 @@ class Parser():
         self.emit_constant(value.number_val(val))
 
     def string(self):
-        #
-        """
-        """
+        # type: () -> None
+        """Extracts relevant section from string, wraps in a ObjectString, wraps
+        in a Value and append to the stack."""
         # Start from position after quote
         chars = self.previous.source[1:self.previous.length - 1]
 
