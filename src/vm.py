@@ -24,12 +24,13 @@ class VM():
         self.ip = 0
         self.stack = [None] * STACK_MAX
         self.stack_top = 0
+        self.globals = table.Table()
 
     def free_vm(self):
         #
         """
         """
-        pass
+        self.globals.free_table()
 
     def reset_stack(self):
         #
@@ -118,6 +119,9 @@ class VM():
         def read_constant():
             return self.bytecode.constants.values[read_byte()]
 
+        def read_string():
+            return self.read_constant().as_string()
+
         def binary_op(value_type, op):
             if not self.peek(0).is_number() or not self.peek(1).is_number():
                 self.runtime_error("Operands must be numbers.")
@@ -143,6 +147,16 @@ class VM():
 
             elif instruction == chunk.OpCode.OP_FALSE:
                 self.push(value.bool_val(False))
+
+            elif instruction == chunk.OpCode.OP_POP:
+                self.pop()
+
+            elif instruction == chunk.OpCode.OP_DEFINE_GLOBAL:
+                name = read_string()
+
+                # TODO: Check valid type
+                self.globals.table_set(name, self.peek(0))
+                self.pop()
 
             elif instruction == chunk.OpCode.OP_EQUAL:
                 b = self.pop()
@@ -186,6 +200,8 @@ class VM():
 
                 self.push(value.number_val(-self.pop().as_number()))
 
-            elif instruction == chunk.OpCode.OP_RETURN:
+            elif instruction == chunk.OpCode.OP_PRINT:
                 self.pop().print_value()
+
+            elif instruction == chunk.OpCode.OP_RETURN:
                 return InterpretResult.INTERPRET_OK

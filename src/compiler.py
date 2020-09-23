@@ -160,6 +160,22 @@ class Parser():
 
         self.error_at_current(message)
 
+    def match(self, token_type):
+        #
+        """
+        """
+        if not self.check(token_type):
+            return False
+
+        self.advance()
+        return True
+
+    def check(self, token_type):
+        #
+        """
+        """
+        return self.current.token_type == token_type
+
     def emit_byte(self, byte):
         #
         """
@@ -316,6 +332,26 @@ class Parser():
 
             infix_rule()
 
+    def identifier_constant(self, name):
+        #
+        """
+        """
+        obj_val = value.obj_val(value.copy_string(name.start, name.length))
+        return self.make_constant(obj_val)
+
+    def parse_variable(self, error_message):
+        #
+        """
+        """
+        self.consume(scanner.TokenType.TOKEN_IDENTIFIER, error_message)
+        return self.identifier_constant(self.parser.previous)
+
+    def define_variable(global_var):
+        #
+        """
+        """
+        self.emit_bytes(chunk.OpCode.OP_DEFINE_GLOBAL, global_var)
+
     def get_rule(self, token_type):
         # type: (TokenType) -> ParseRule
         """Custom function to convert TokenType to ParseRule. This allows the
@@ -345,6 +381,76 @@ class Parser():
         """
         self.parse_precedence(Precedence.PREC_ASSIGNMENT)
 
+    def var_declaration(self):
+        #
+        """
+        """
+        global_var = self.parse_variable("Expect variable name.")
+
+        if self.match(scanner.TokenType.TOKEN_EQUAL):
+            self.expression()
+        else:
+            self.emit_byte(chunk.OpCode.OP_NIL)
+
+        self.consume(scanner.TokenType.TOKEN_SEMICOLON,
+                     "Expect ';' after variable declaration")
+
+        define_variable(global_var)
+
+    def expression_statement(self):
+        #
+        """
+        """
+        self.expression()
+        self.consume(scanner.TokenType.TOKEN_SEMICOLON,
+                     "Expect ';' after expression.")
+        self.emit_byte(chunk.OpCode.OP_POP)
+
+    def print_statement(self):
+        #
+        """
+        """
+        self.expression()
+        self.consume(scanner.TokenType.TOKEN_SEMICOLON,
+                     "Expect ';' after value.")
+        self.emit_byte(chunk.OpCode.OP_PRINT)
+
+    def synchronize(self):
+        #
+        """
+        """
+        self.parser.panic_mode = False
+
+        while self.parser.current.token_type != scanner.TokenType.TOKEN_EOF:
+            if self.parser.previous.token_type == scanner.TokenType.TOKEN_SEMICOLON:
+                return None
+
+            if self.parser.current.token_type == scanner.TokenType.TOKEN_RETURN:
+                return None
+
+            self.advance()
+
+    def declaration(self):
+        #
+        """
+        """
+        if self.match(scanner.TokenType.TOKEN_VAR):
+            self.var_declaration()
+        else:
+            self.statement()
+
+        if self.parser.panic_mode:
+            self.synchronize()
+
+    def statement(self):
+        #
+        """
+        """
+        if self.match(scanner.TokenType.TOKEN_PRINT):
+            self.print_statement()
+        else:
+            self.expression_statement()
+
 
 def compile(source, bytecode):
     # type: (str, chunk.Chunk) -> None
@@ -353,8 +459,16 @@ def compile(source, bytecode):
     parser = Parser(reader=reader, bytecode=bytecode)
 
     parser.advance()
-    parser.expression()
-    parser.consume(scanner.TokenType.TOKEN_EOF, "Expect end of expression.")
+
+    # parser.expression()
+    # parser.consume(scanner.TokenType.TOKEN_EOF, "Expect end of expression.")
+
+    while not parser.match(scanner.TokenType.TOKEN_EOF):
+        # breakpoint()
+        # import time; time.sleep(0.1)
+        # print(parser.current.token_type)
+        parser.declaration()
+
     parser.end_compiler()
 
     return not parser.had_error

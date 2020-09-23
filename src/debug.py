@@ -34,6 +34,10 @@ def disassemble_instruction(bytecode, offset):
         return simple_instruction("OP_TRUE", offset)
     elif instruction == chunk.OpCode.OP_FALSE:
         return simple_instruction("OP_FALSE", offset)
+    elif instruction == chunk.OpCode.OP_POP:
+        return simple_instruction("OP_POP", offset)
+    elif instruction == chunk.OpCode.OP_DEFINE_GLOBAL:
+        return simple_instruction("OP_DEFINE_GLOBAL", bytecode, offset)
     elif instruction == chunk.OpCode.OP_EQUAL:
         return simple_instruction("OP_EQUAL", offset)
     elif instruction == chunk.OpCode.OP_GREATER:
@@ -50,6 +54,8 @@ def disassemble_instruction(bytecode, offset):
         return simple_instruction("OP_DIVIDE", offset)
     elif instruction == chunk.OpCode.OP_NEGATE:
         return simple_instruction("OP_NEGATE", offset)
+    elif instruction == chunk.OpCode.OP_PRINT:
+        return simple_instruction("OP_PRINT", offset)
     elif instruction == chunk.OpCode.OP_NOT:
         return simple_instruction("OP_NOT", offset)
     elif instruction == chunk.OpCode.OP_RETURN:

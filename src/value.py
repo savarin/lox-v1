@@ -205,7 +205,7 @@ class Value():
         elif self.value_type == ValueType.VAL_NIL:
             print("nil")
         elif self.value_type == ValueType.VAL_NUMBER:
-            print("{}", self.as_number)
+            print("{}".format(self.as_number()))
         elif self.value_type == ValueType.VAL_OBJ:
             self.print_object()
 
