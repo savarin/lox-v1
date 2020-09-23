@@ -1,3 +1,5 @@
+from src import chunk
+from src import compiler
 from src import value
 from src import vm
 

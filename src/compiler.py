@@ -148,7 +148,7 @@ class Parser():
             if self.current.token_type != scanner.TokenType.TOKEN_ERROR:
                 break
 
-            error_at_current(self.current.start)
+            self.error_at_current(self.current.start)
 
     def consume(self, token_type, message):
         # type: (scanner.TokenType, str) -> None
@@ -222,7 +222,7 @@ class Parser():
         if DEBUG_PRINT_CODE and not self.had_error:
             debug.disassemble_chunk(self.current_chunk(), "code")
 
-    def binary(self):
+    def binary(self, can_assign):
         #
         """
         """
@@ -257,7 +257,7 @@ class Parser():
         elif operator_type == scanner.TokenType.TOKEN_SLASH:
             self.emit_byte(chunk.OpCode.OP_DIVIDE)
 
-    def literal(self):
+    def literal(self, can_assign):
         #
         """
         """
@@ -268,7 +268,7 @@ class Parser():
         elif self.previous.token_type == scanner.TokenType.TOKEN_TRUE:
             self.emit_byte(chunk.OpCode.OP_TRUE)
 
-    def grouping(self):
+    def grouping(self, can_assign):
         #
         """
         """
@@ -278,14 +278,14 @@ class Parser():
             "Expect ')' after expression.",
         )
 
-    def number(self):
+    def number(self, can_assign):
         #
         """
         """
         val = float(self.previous.source)
         self.emit_constant(value.number_val(val))
 
-    def string(self):
+    def string(self, can_assign):
         # type: () -> None
         """Extracts relevant section from string, wraps in a ObjectString, wraps
         in a Value and append to the stack."""
@@ -297,20 +297,28 @@ class Parser():
 
         self.emit_constant(value.obj_val(val))
 
-    def named_variable(self, name):
+    def named_variable(self, name, can_assign):
         #
         """
         """
         arg = self.identifier_constant(name)
+
+        if can_assign and self.match(scanner.TokenType.TOKEN_EQUAL):
+            self.expression()
+            self.emit_bytes(chunk.OpCode.OP_SET_GLOBAL, arg)
+        else:
+            self.emit_bytes(chunk.OpCode.OP_SET_GLOBAL, arg)
+
+
         self.emit_bytes(chunk.OpCode.OP_GET_GLOBAL, arg)
 
-    def variable(self):
-        #
+    def variable(self, can_assign):
+        # type: (bool) -> None
         """
         """
-        self.named_variable(self.previous)
+        self.named_variable(self.previous, can_assign)
 
-    def unary(self):
+    def unary(self, can_assign):
         #
         """
         """
@@ -336,14 +344,19 @@ class Parser():
             self.error("Expect expression")
             return None
 
-        prefix_rule()
+        can_assign = precedence.value <= Precedence.PREC_ASSIGNMENT.value
+        prefix_rule(can_assign)
 
         while precedence.value <= self.get_rule(
                 self.current.token_type).precedence.value:
             self.advance()
-            infix_rule = self.get_rule(self.previous.token_type).infix
 
-            infix_rule()
+            infix_rule = self.get_rule(self.previous.token_type).infix
+            infix_rule(can_assign)
+
+        # Error if '=' not consumed as part of expression
+        if can_assign and self.match(scanner.TokenType.TOKEN_EQUAL):
+            self.error("Invalid assignment target.")
 
     def identifier_constant(self, name):
         #

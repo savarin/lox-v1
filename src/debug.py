@@ -40,6 +40,8 @@ def disassemble_instruction(bytecode, offset):
         return constant_instruction("OP_GET_GLOBAL", bytecode, offset)
     elif instruction == chunk.OpCode.OP_DEFINE_GLOBAL:
         return constant_instruction("OP_DEFINE_GLOBAL", bytecode, offset)
+    elif instruction == chunk.OpCode.OP_SET_GLOBAL:
+        return constant_instruction("OP_SET_GLOBAL", bytecode, offset)
     elif instruction == chunk.OpCode.OP_EQUAL:
         return simple_instruction("OP_EQUAL", offset)
     elif instruction == chunk.OpCode.OP_GREATER:

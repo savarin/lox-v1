@@ -26,6 +26,9 @@ class VM():
         self.stack_top = 0
         self.globals = table.Table()
 
+        # Custom attribute for testing
+        self.result = None
+
     def free_vm(self):
         #
         """
@@ -166,6 +169,20 @@ class VM():
                 self.globals.table_set(name, self.peek(0))
                 self.pop()
 
+            elif instruction == chunk.OpCode.OP_SET_GLOBAL:
+                pass
+
+                # TODO: Resolve set global
+                # name = read_string()
+                # val = self.peek(0)
+
+                # Compared to textbook, include self.peek(0) in check, otherwise
+                # table is mutated
+                # if val and self.globals.table_set(name, val):
+                #     self.globals.table_delete(name)
+                #     self.runtime_error("Undefined variable '{}'.", name.chars)
+                #     return InterpretResult.INTERPRET_RUNTIME_ERROR
+
             elif instruction == chunk.OpCode.OP_EQUAL:
                 b = self.pop()
                 a = self.pop()
@@ -209,7 +226,8 @@ class VM():
                 self.push(value.number_val(-self.pop().as_number()))
 
             elif instruction == chunk.OpCode.OP_PRINT:
-                self.pop().print_value()
+                self.result = self.pop()
+                self.result.print_value()
 
             elif instruction == chunk.OpCode.OP_RETURN:
                 return InterpretResult.INTERPRET_OK
