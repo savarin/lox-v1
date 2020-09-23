@@ -56,7 +56,7 @@ class Table():
             dest.value = entry.value
             self.count += 1
 
-        self.entries = memory.free.array(self.entries, self.capacity)
+        self.entries = memory.free_array(self.entries, self.capacity)
         self.entries = entries
         self.capacity = capacity
 
