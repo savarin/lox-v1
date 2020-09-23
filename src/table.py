@@ -120,29 +120,6 @@ class Table():
             if not entry.key is None:
                 self.table_set(entry.key, entry.value)
 
-    def table_find_string(chars, length, hash_value):
-        # type: (List[Entry], int, int) -> Optional[ObjectString]
-        """Retrieves key in table that matches the ObjectString arguments."""
-        if self.count == 0:
-            return None
-
-        index = hash_value % self.capacity
-
-        while True:
-            entry = self.entries[index]
-            key = entry.key
-
-            if key is None:
-                # Stop if empty non-tombstone entry found
-                if entry.value.is_nil():
-                    return None
-                elif (key.length == length
-                      and key.hash_value == hash_value
-                      and key.chars == chars):
-                    return key
-
-            index = (index + 1) % self.capacity
-
 
 def find_entry(entries, capacity, key):
     # type: (List[Entry], int, ObjectString) -> Optional[Entry]

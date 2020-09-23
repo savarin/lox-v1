@@ -58,11 +58,6 @@ def take_string(chars, length):
     argument, since no need for copy of characters on the heap.
     """
     hash_value = hash_string(chars, length)
-    # interned = table.table_find_string(strings, chars, length, hash_value)
-
-    # if not interned is None:
-    #     chars = memory.free_array(chars, length + 1)
-    #     return interned
 
     return allocate_string(chars, length, hash_value)
 
@@ -79,26 +74,21 @@ def copy_string(chars, length):
 
     hash_value = hash_string(heap_chars, length)
 
-    # interned = table.table_find_string(strings, chars, length, hash_value)
-
-    # if not interned is None:
-    #     return interned
-
     return allocate_string(heap_chars, length, hash_value)
 
 
 def allocate_string(chars, length, hash_value):
     # type: (List[str], int, Any) -> ObjectString
     """Creates ObjectString from Object and copies chars. Note length represents
-    length of characters excluding end of string token."""
+    length of characters excluding end of string token.
+
+    String internment not implemented due to circular dependencies."""
     obj = allocate_object(length + 1, ObjectType.OBJ_STRING)
 
     string = ObjectString(obj)
     string.chars[:len(chars)] = chars
     string.length = length
     string.hash_value = hash_value
-
-    # table.table_set(strings, string, nil_val())
 
     return string
 
@@ -233,7 +223,10 @@ class Value():
         elif self.value_type == ValueType.VAL_NUMBER:
             return self.as_number() == other.as_number()
         elif self.value_type == ValueType.VAL_OBJ:
-            return self.as_obj() == other.as_obj()
+            self_string = self.as_string()
+            other_string = other.as_string()
+            return (self_string.length == other_string.length
+                    and self_string.chars == other_string.chars)
 
         return False
 
