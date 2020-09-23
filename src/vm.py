@@ -43,7 +43,7 @@ class VM():
         """
         """
         print(messages if isinstance(messages, str) else " ".join(messages))
-        print("[line {} in script]".format(self.bytecode.line))
+        print("[line {} in script]".format(self.bytecode.lines[self.ip]))
 
         self.reset_stack()
 
@@ -120,7 +120,7 @@ class VM():
             return self.bytecode.constants.values[read_byte()]
 
         def read_string():
-            return self.read_constant().as_string()
+            return read_constant().as_string()
 
         def binary_op(value_type, op):
             if not self.peek(0).is_number() or not self.peek(1).is_number():
@@ -151,10 +151,18 @@ class VM():
             elif instruction == chunk.OpCode.OP_POP:
                 self.pop()
 
+            elif instruction == chunk.OpCode.OP_GET_GLOBAL:
+                name = read_string()
+                val = self.globals.table_get(name)
+
+                if not val:
+                    self.runtime_error("Undefined variable '{}'.".format(name.chars))
+                    return InterpretResult.INTERPRET_RUNTIME_ERROR
+
+                self.push(val)
+
             elif instruction == chunk.OpCode.OP_DEFINE_GLOBAL:
                 name = read_string()
-
-                # TODO: Check valid type
                 self.globals.table_set(name, self.peek(0))
                 self.pop()
 

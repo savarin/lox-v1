@@ -142,7 +142,7 @@ def find_entry(entries, capacity, key):
                 tombstone = entry
 
         # Key found
-        elif entry.key == key:
+        elif entry.key.chars == key.chars:
             return entry
 
         index = (index + 1) % capacity

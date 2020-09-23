@@ -58,7 +58,7 @@ rule_map = {
     "TOKEN_GREATER_EQUAL": [None,       "binary", "PREC_COMPARISON"],
     "TOKEN_LESS":          [None,       "binary", "PREC_COMPARISON"],
     "TOKEN_LESS_EQUAL":    [None,       "binary", "PREC_COMPARISON"],
-    "TOKEN_IDENTIFIER":    [None,       None,     "PREC_NONE"],
+    "TOKEN_IDENTIFIER":    ["variable", None,     "PREC_NONE"],
     "TOKEN_STRING":        ["string",   None,     "PREC_NONE"],
     "TOKEN_NUMBER":        ["number",   None,     "PREC_NONE"],
     "TOKEN_AND":           [None,       None,     "PREC_NONE"],
@@ -297,6 +297,19 @@ class Parser():
 
         self.emit_constant(value.obj_val(val))
 
+    def named_variable(self, name):
+        #
+        """
+        """
+        arg = self.identifier_constant(name)
+        self.emit_bytes(chunk.OpCode.OP_GET_GLOBAL, arg)
+
+    def variable(self):
+        #
+        """
+        """
+        self.named_variable(self.previous)
+
     def unary(self):
         #
         """
@@ -336,7 +349,8 @@ class Parser():
         #
         """
         """
-        obj_val = value.obj_val(value.copy_string(name.start, name.length))
+        chars = name.source[:name.length]
+        obj_val = value.obj_val(value.copy_string(chars, name.length))
         return self.make_constant(obj_val)
 
     def parse_variable(self, error_message):
@@ -344,9 +358,9 @@ class Parser():
         """
         """
         self.consume(scanner.TokenType.TOKEN_IDENTIFIER, error_message)
-        return self.identifier_constant(self.parser.previous)
+        return self.identifier_constant(self.previous)
 
-    def define_variable(global_var):
+    def define_variable(self, global_var):
         #
         """
         """
@@ -365,6 +379,7 @@ class Parser():
             "number": self.number,
             "string": self.string,
             "unary": self.unary,
+            "variable": self.variable,
         }
 
         rule = rule_map[token_type.name]
@@ -395,7 +410,7 @@ class Parser():
         self.consume(scanner.TokenType.TOKEN_SEMICOLON,
                      "Expect ';' after variable declaration")
 
-        define_variable(global_var)
+        self.define_variable(global_var)
 
     def expression_statement(self):
         #
@@ -419,13 +434,13 @@ class Parser():
         #
         """
         """
-        self.parser.panic_mode = False
+        self.panic_mode = False
 
-        while self.parser.current.token_type != scanner.TokenType.TOKEN_EOF:
-            if self.parser.previous.token_type == scanner.TokenType.TOKEN_SEMICOLON:
+        while self.current.token_type != scanner.TokenType.TOKEN_EOF:
+            if self.previous.token_type == scanner.TokenType.TOKEN_SEMICOLON:
                 return None
 
-            if self.parser.current.token_type == scanner.TokenType.TOKEN_RETURN:
+            if self.current.token_type == scanner.TokenType.TOKEN_RETURN:
                 return None
 
             self.advance()
@@ -439,7 +454,7 @@ class Parser():
         else:
             self.statement()
 
-        if self.parser.panic_mode:
+        if self.panic_mode:
             self.synchronize()
 
     def statement(self):
@@ -460,13 +475,7 @@ def compile(source, bytecode):
 
     parser.advance()
 
-    # parser.expression()
-    # parser.consume(scanner.TokenType.TOKEN_EOF, "Expect end of expression.")
-
     while not parser.match(scanner.TokenType.TOKEN_EOF):
-        # breakpoint()
-        # import time; time.sleep(0.1)
-        # print(parser.current.token_type)
         parser.declaration()
 
     parser.end_compiler()
