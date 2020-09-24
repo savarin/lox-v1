@@ -9,32 +9,7 @@ import value
 DEBUG_PRINT_CODE = True
 
 UINT8_MAX = 256
-
-
-# yapf: disable
-class Precedence(Enum):
-    PREC_NONE = 1
-    PREC_ASSIGNMENT = 2  # =
-    PREC_OR = 3          # or
-    PREC_AND = 4         # and
-    PREC_EQUALITY = 5    # == !=
-    PREC_COMPARISON = 6  # < > <= >=
-    PREC_TERM = 7        # + -
-    PREC_FACTOR = 8      # * /
-    PREC_UNARY = 9       # ! -
-    PREC_CALL = 10       # . ()
-    PREC_PRIMARY = 11
-# yapf: enable
-
-
-class ParseRule():
-    def __init__(self, prefix, infix, precedence):
-        #
-        """
-        """
-        self.prefix = prefix
-        self.infix = infix
-        self.precedence = precedence
+UINT8_COUNT = UINT8_MAX + 1
 
 
 # yapf: disable
@@ -80,15 +55,59 @@ rule_map = {
     "TOKEN_ERROR":         [None,       None,     "PREC_NONE"],
     "TOKEN_EOF":           [None,       None,     "PREC_NONE"],
 }
+
+
+class Precedence(Enum):
+    PREC_NONE = 1
+    PREC_ASSIGNMENT = 2  # =
+    PREC_OR = 3          # or
+    PREC_AND = 4         # and
+    PREC_EQUALITY = 5    # == !=
+    PREC_COMPARISON = 6  # < > <= >=
+    PREC_TERM = 7        # + -
+    PREC_FACTOR = 8      # * /
+    PREC_UNARY = 9       # ! -
+    PREC_CALL = 10       # . ()
+    PREC_PRIMARY = 11
 # yapf: enable
 
 
+class ParseRule():
+    def __init__(self, prefix, infix, precedence):
+        #
+        """
+        """
+        self.prefix = prefix
+        self.infix = infix
+        self.precedence = precedence
+
+
+class Local():
+    def __init__(self):
+        #
+        """
+        """
+        self.name = None
+        self.depth = 0
+
+
+class Compiler():
+    def __init__(self):
+        #
+        """
+        """
+        self.locals = [Local()] * UINT8_COUNT
+        self.local_count = 0
+        self.scope_depth = 0
+
+
 class Parser():
-    def __init__(self, reader, bytecode, debug):
-        # type: (scanner.Scanner, chunk.Chunk, bool) -> None
+    def __init__(self, reader, composer, bytecode, debug):
+        # type: (scanner.Scanner, Compiler, chunk.Chunk, bool) -> None
         """
         """
         self.reader = reader
+        self.composer = composer
         self.bytecode = bytecode  # referred to in text as compiling_chunk
         self.current = None
         self.previous = None
@@ -222,6 +241,22 @@ class Parser():
 
         if self.debug and not self.had_error:
             debug.disassemble_chunk(self.current_chunk(), "code")
+
+    def begin_scope(self):
+        #
+        """
+        """
+        self.composer.scope_depth += 1
+
+    def end_scope(self):
+        #
+        """
+        """
+        self.composer.scope_depth -= 1
+
+        while self.composer.local_count > 0 and self.composer.locals[self.composer.local_count - 1].depth > self.composer.scope_depth:
+            self.emit_byte(chunk.OpCode.OP_POP)
+            self.composer.local_count -= 1
 
     def binary(self, can_assign):
         #
@@ -364,17 +399,70 @@ class Parser():
         obj_val = value.obj_val(value.copy_string(chars, name.length))
         return self.make_constant(obj_val)
 
+    @staticmethod
+    def identifiers_equal(self, a, b):
+        #
+        """
+        """
+        if a.length != b.length:
+            return False
+
+        return a == b
+
+    def add_local(self, name):
+        #
+        """
+        """
+        if self.composer.local_count == UINT8_COUNT:
+            self.error("Too many local variables in function.")
+            return None
+
+        self.composer.local_count += 1
+        local = self.composer.locals[self.composer.local_count]
+        local.name = name
+        local.depth = self.composer.scope_depth
+
+    def declare_variable(self):
+        #
+        """
+        """
+        # Global variables are implicitly declared
+        if self.composer.scope_depth == 0:
+            return None
+
+        name = self.previous
+
+        for i in range(self.composer.local_count - 1, -1, -1):
+            local = self.composer.locals[i]
+
+            if local.depth != -1 and local.depth < self.composer.scope_depth:
+                break
+
+            if self.identifiers_equal(name, local.name):
+                self.error("Variable with this name already declared in this scope.")
+
+        self.add_local(name)
+
     def parse_variable(self, error_message):
         #
         """
         """
         self.consume(scanner.TokenType.TOKEN_IDENTIFIER, error_message)
+
+        self.declare_variable()
+
+        if self.composer.scope_depth > 0:
+            return 0
+
         return self.identifier_constant(self.previous)
 
     def define_variable(self, global_var):
         #
         """
         """
+        if self.composer.scope_depth > 0:
+            return None
+
         self.emit_bytes(chunk.OpCode.OP_DEFINE_GLOBAL, global_var)
 
     def get_rule(self, token_type):
@@ -406,6 +494,15 @@ class Parser():
         """
         """
         self.parse_precedence(Precedence.PREC_ASSIGNMENT)
+
+    def block(self):
+        #
+        """
+        """
+        while not self.check(scanner.TokenType.TOKEN_RIGHT_BRACE) and not self.check(scanner.TokenType.TOKEN_EOF):
+            self.declaration()
+
+        self.consume(scanner.TokenType.TOKEN_RIGHT_BRACE, "Expect '}' after block.")
 
     def var_declaration(self):
         #
@@ -474,6 +571,10 @@ class Parser():
         """
         if self.match(scanner.TokenType.TOKEN_PRINT):
             self.print_statement()
+        elif self.match(scanner.TokenType.TOKEN_LEFT_BRACE):
+            self.begin_scope()
+            self.block()
+            self.end_scope()
         else:
             self.expression_statement()
 
@@ -482,7 +583,14 @@ def compile(source, bytecode, debug):
     # type: (str, chunk.Chunk, bool) -> None
     """KIV change this to Compiler class with method compile."""
     reader = scanner.Scanner(source)
-    parser = Parser(reader=reader, bytecode=bytecode, debug=debug)
+    composer = Compiler()
+
+    parser = Parser(
+        reader=reader,
+        composer=composer,
+        bytecode=bytecode,
+        debug=debug,
+    )
 
     parser.advance()
 
