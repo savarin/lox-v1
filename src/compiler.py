@@ -251,7 +251,9 @@ class Parser():
         """
         self.composer.scope_depth -= 1
 
-        while self.composer.local_count > 0 and self.composer.locals[self.composer.local_count - 1].depth > self.composer.scope_depth:
+        while (self.composer.local_count > 0
+               and self.composer.locals[self.composer.local_count - 1].depth >
+               self.composer.scope_depth):
             self.emit_byte(chunk.OpCode.OP_POP)
             self.current.local_count -= 1
 
@@ -334,13 +336,21 @@ class Parser():
         #
         """
         """
-        arg = self.identifier_constant(name)
+        arg = self.resolve_local(name)
+
+        if arg != -1:
+            get_op = chunk.OpCode.OP_GET_LOCAL
+            set_op = chunk.OpCode.OP_SET_LOCAL
+        else:
+            arg = self.identifier_constant(name)
+            get_op = chunk.OpCode.OP_GET_GLOBAL
+            set_op = chunk.OpCode.OP_SET_GLOBAL
 
         if can_assign and self.match(scanner.TokenType.TOKEN_EQUAL):
             self.expression()
-            self.emit_bytes(chunk.OpCode.OP_SET_GLOBAL, arg)
+            self.emit_bytes(set_op, arg)
         else:
-            self.emit_bytes(chunk.OpCode.OP_GET_GLOBAL, arg)
+            self.emit_bytes(get_op, arg)
 
     def variable(self, can_assign):
         # type: (bool) -> None
@@ -405,6 +415,18 @@ class Parser():
 
         return a == b
 
+    def resolve_local(self, name):
+        #
+        """
+        """
+        for i in range(self.composer.local_count - 1, -1, -1):
+            local = self.composer.locals[i]
+
+            if self.identifiers_equal(name, local.name):
+                return i
+
+        return -1
+
     def add_local(self, name):
         #
         """
@@ -434,7 +456,8 @@ class Parser():
                 break
 
             if self.identifiers_equal(name, local.name):
-                error("Variable with this name already declared in this scope.")
+                error(
+                    "Variable with this name already declared in this scope.")
 
         self.add_local(name)
 

@@ -156,6 +156,10 @@ class VM():
             elif instruction == chunk.OpCode.OP_POP:
                 self.pop()
 
+            elif instruction == chunk.OpCode.OP_GET_LOCAL:
+                slot = read_byte()
+                self.stack[slot] = self.peek(0)
+
             elif instruction == chunk.OpCode.OP_GET_GLOBAL:
                 name = read_string()
                 val = self.globals.table_get(name)
@@ -173,8 +177,11 @@ class VM():
                 self.globals.table_set(name, self.peek(0))
                 self.pop()
 
+            elif instruction == chunk.OpCode.OP_SET_LOCAL:
+                slot = read_byte()
+                self.push(self.stack[slot])
+
             elif instruction == chunk.OpCode.OP_SET_GLOBAL:
-                # TODO: Resolve set global
                 name = read_string()
 
                 if self.globals.table_set(name, self.peek(0)):

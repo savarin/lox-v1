@@ -37,6 +37,10 @@ def disassemble_instruction(bytecode, offset):
         return simple_instruction("OP_FALSE", offset)
     elif instruction == chunk.OpCode.OP_POP:
         return simple_instruction("OP_POP", offset)
+    elif instruction == chunk.OpCode.OP_GET_LOCAL:
+        return constant_instruction("OP_GET_LOCAL", bytecode, offset)
+    elif instruction == chunk.OpCode.OP_SET_LOCAL:
+        return constant_instruction("OP_SET_LOCAL", bytecode, offset)
     elif instruction == chunk.OpCode.OP_GET_GLOBAL:
         return constant_instruction("OP_GET_GLOBAL", bytecode, offset)
     elif instruction == chunk.OpCode.OP_DEFINE_GLOBAL:
@@ -76,6 +80,15 @@ def simple_instruction(name, offset):
     """
     print("{}".format(name))
     return offset + 1
+
+
+def byte_instruction(name, bytecode, offset):
+    #
+    """
+    """
+    slot = bytecode.code[offset + 1]
+    print("{:16s} {:4d} '{}'", name, slot)
+    return offset + 2
 
 
 def constant_instruction(name, bytecode, offset):
