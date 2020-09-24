@@ -423,6 +423,10 @@ class Parser():
             local = self.composer.locals[i]
 
             if self.identifiers_equal(name, local.name):
+                if local.depth == -1:
+                    self.error(
+                        "Cannot read local variable in its own initializer.")
+
                 return i
 
         return -1
@@ -437,7 +441,7 @@ class Parser():
 
         local = self.composer.locals[self.composer.local_count + 1]
         local.name = name
-        local.depth = self.composer.scope_depth
+        local.depth = -1
 
     def declare_variable(self):
         #
@@ -473,11 +477,19 @@ class Parser():
 
         return self.identifier_constant(self.previous)
 
+    def mark_initialized(self):
+        #
+        """
+        """
+        index = self.composer.local_count - 1
+        self.composer.locals[index].depth = self.composer.scope_depth
+
     def define_variable(self, global_var):
         #
         """
         """
         if self.composer.scope_depth > 0:
+            self.mark_initialized()
             return None
 
         self.emit_bytes(chunk.OpCode.OP_DEFINE_GLOBAL, global_var)
