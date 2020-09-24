@@ -10,7 +10,6 @@ import value
 UINT8_MAX = 256
 UINT8_COUNT = 8  # UINT8_MAX + 1
 
-
 # yapf: disable
 rule_map = {
     "TOKEN_LEFT_PAREN":    ["grouping", None,     "PREC_NONE"],
@@ -256,7 +255,9 @@ class Parser():
         """
         self.composer.scope_depth -= 1
 
-        while self.composer.local_count > 0 and self.composer.locals[self.composer.local_count - 1].depth > self.composer.scope_depth:
+        while (self.composer.local_count > 0
+               and self.composer.locals[self.composer.local_count - 1].depth >
+               self.composer.scope_depth):
             self.emit_byte(chunk.OpCode.OP_POP)
             self.composer.local_count -= 1
 
@@ -471,7 +472,8 @@ class Parser():
                 break
 
             if self.identifiers_equal(name, local.name):
-                self.error("Variable with this name already declared in this scope.")
+                self.error(
+                    "Variable with this name already declared in this scope.")
 
         self.add_local(name)
 
@@ -536,10 +538,12 @@ class Parser():
         #
         """
         """
-        while not self.check(scanner.TokenType.TOKEN_RIGHT_BRACE) and not self.check(scanner.TokenType.TOKEN_EOF):
+        while (not self.check(scanner.TokenType.TOKEN_RIGHT_BRACE)
+               and not self.check(scanner.TokenType.TOKEN_EOF)):
             self.declaration()
 
-        self.consume(scanner.TokenType.TOKEN_RIGHT_BRACE, "Expect '}' after block.")
+        self.consume(scanner.TokenType.TOKEN_RIGHT_BRACE,
+                     "Expect '}' after block.")
 
     def var_declaration(self):
         #

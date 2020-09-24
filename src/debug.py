@@ -73,12 +73,14 @@ def disassemble_instruction(bytecode, offset):
     print("Unknown opcode {}".format(instruction))
     return offset + 1
 
+
 def simple_instruction(name, offset):
     #
     """
     """
     print("{}".format(name))
     return offset + 1
+
 
 def byte_instruction(name, bytecode, offset):
     #
@@ -89,6 +91,7 @@ def byte_instruction(name, bytecode, offset):
     print("{:16s} {:4d}".format(name, slot))
     return offset + 2
 
+
 def constant_instruction(name, bytecode, offset):
     #
     """
@@ -98,6 +101,7 @@ def constant_instruction(name, bytecode, offset):
 
     print("{:16s} {:4d} '{}'".format(name, constant, val))
     return offset + 2
+
 
 def convert_value(val):
     #
