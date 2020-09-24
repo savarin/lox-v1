@@ -445,8 +445,9 @@ class Parser():
             self.error("Too many local variables in function.")
             return None
 
-        self.composer.local_count += 1
         local = self.composer.locals[self.composer.local_count]
+        self.composer.local_count += 1
+
         local.name = name
         local.depth = self.composer.scope_depth
 
