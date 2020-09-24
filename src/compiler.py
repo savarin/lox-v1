@@ -84,8 +84,8 @@ rule_map = {
 
 
 class Parser():
-    def __init__(self, reader, bytecode):
-        # type: (scanner.Scanner, chunk.Chunk) -> None
+    def __init__(self, reader, bytecode, debug):
+        # type: (scanner.Scanner, chunk.Chunk, bool) -> None
         """
         """
         self.reader = reader
@@ -94,6 +94,7 @@ class Parser():
         self.previous = None
         self.had_error = False
         self.panic_mode = False
+        self.debug = debug
 
     def current_chunk(self):
         #
@@ -219,7 +220,7 @@ class Parser():
         """
         self.emit_return()
 
-        if DEBUG_PRINT_CODE and not self.had_error:
+        if self.debug and not self.had_error:
             debug.disassemble_chunk(self.current_chunk(), "code")
 
     def binary(self, can_assign):
@@ -307,10 +308,7 @@ class Parser():
             self.expression()
             self.emit_bytes(chunk.OpCode.OP_SET_GLOBAL, arg)
         else:
-            self.emit_bytes(chunk.OpCode.OP_SET_GLOBAL, arg)
-
-
-        self.emit_bytes(chunk.OpCode.OP_GET_GLOBAL, arg)
+            self.emit_bytes(chunk.OpCode.OP_GET_GLOBAL, arg)
 
     def variable(self, can_assign):
         # type: (bool) -> None
@@ -480,11 +478,11 @@ class Parser():
             self.expression_statement()
 
 
-def compile(source, bytecode):
-    # type: (str, chunk.Chunk) -> None
+def compile(source, bytecode, debug):
+    # type: (str, chunk.Chunk, bool) -> None
     """KIV change this to Compiler class with method compile."""
     reader = scanner.Scanner(source)
-    parser = Parser(reader=reader, bytecode=bytecode)
+    parser = Parser(reader=reader, bytecode=bytecode, debug=debug)
 
     parser.advance()
 

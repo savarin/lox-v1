@@ -1,4 +1,5 @@
 import chunk
+import value
 
 
 def disassemble_chunk(bytecode, name):
@@ -82,6 +83,16 @@ def constant_instruction(name, bytecode, offset):
     """
     """
     constant = bytecode.code[offset + 1]
-    print("{:16s} {:4d} '{}'".format(name, constant,
-                                     bytecode.constants.values[constant]))
+    print("{:16s} {:4d} '{}'".format(
+        name, constant, convert_value(bytecode.constants.values[constant])))
     return offset + 2
+
+
+def convert_value(val):
+    #
+    """
+    """
+    if isinstance(val, value.Value) and val.is_string():
+        return "".join(val.as_cstring()[:-1])
+
+    return val

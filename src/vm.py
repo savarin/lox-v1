@@ -28,6 +28,7 @@ class VM():
 
         # Custom attribute for testing
         self.result = None
+        self.debug = False
 
     def free_vm(self):
         #
@@ -93,13 +94,14 @@ class VM():
         result = value.take_string(chars, length)
         self.push(value.obj_val(result))
 
-    def interpret(self, source):
-        # type: (str) -> InterpretResult
+    def interpret(self, source, debug=False, expose=True):
+        # type: (str, False) -> InterpretResult
         """
         """
         bytecode = chunk.Chunk()
+        self.expose = expose
 
-        if not compiler.compile(source, bytecode):
+        if not compiler.compile(source, bytecode, debug):
             bytecode.free_chunk()
             return InterpretResult.INTERPRET_COMPILE_ERROR
 
@@ -159,26 +161,28 @@ class VM():
                 val = self.globals.table_get(name)
 
                 if not val:
-                    self.runtime_error("Undefined variable '{}'.".format(name.chars))
+                    self.runtime_error("Undefined variable '{}'.".format(
+                        name.chars))
                     return InterpretResult.INTERPRET_RUNTIME_ERROR
 
                 self.push(val)
 
             elif instruction == chunk.OpCode.OP_DEFINE_GLOBAL:
                 name = read_string()
+
                 self.globals.table_set(name, self.peek(0))
                 self.pop()
 
             elif instruction == chunk.OpCode.OP_SET_GLOBAL:
+                # TODO: Resolve set global
                 pass
 
-                # TODO: Resolve set global
                 # name = read_string()
                 # val = self.peek(0)
 
                 # Compared to textbook, include self.peek(0) in check, otherwise
                 # table is mutated
-                # if val and self.globals.table_set(name, val):
+                # if self.globals.table_set(name, val):
                 #     self.globals.table_delete(name)
                 #     self.runtime_error("Undefined variable '{}'.", name.chars)
                 #     return InterpretResult.INTERPRET_RUNTIME_ERROR
@@ -227,7 +231,9 @@ class VM():
 
             elif instruction == chunk.OpCode.OP_PRINT:
                 self.result = self.pop()
-                self.result.print_value()
+
+                if self.expose:
+                    self.result.print_value()
 
             elif instruction == chunk.OpCode.OP_RETURN:
                 return InterpretResult.INTERPRET_OK
