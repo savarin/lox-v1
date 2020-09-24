@@ -175,17 +175,12 @@ class VM():
 
             elif instruction == chunk.OpCode.OP_SET_GLOBAL:
                 # TODO: Resolve set global
-                pass
+                name = read_string()
 
-                # name = read_string()
-                # val = self.peek(0)
-
-                # Compared to textbook, include self.peek(0) in check, otherwise
-                # table is mutated
-                # if self.globals.table_set(name, val):
-                #     self.globals.table_delete(name)
-                #     self.runtime_error("Undefined variable '{}'.", name.chars)
-                #     return InterpretResult.INTERPRET_RUNTIME_ERROR
+                if self.globals.table_set(name, self.peek(0)):
+                    self.globals.table_delete(name)
+                    self.runtime_error("Undefined variable '{}'.", name.chars)
+                    return InterpretResult.INTERPRET_RUNTIME_ERROR
 
             elif instruction == chunk.OpCode.OP_EQUAL:
                 b = self.pop()
