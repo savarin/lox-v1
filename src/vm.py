@@ -28,7 +28,7 @@ class VM():
 
         # Custom attribute for testing
         self.result = None
-        self.debug = False
+        self.expose = True
 
     def free_vm(self):
         #
@@ -94,14 +94,14 @@ class VM():
         result = value.take_string(chars, length)
         self.push(value.obj_val(result))
 
-    def interpret(self, source, debug=False, expose=True):
-        # type: (str, False) -> InterpretResult
+    def interpret(self, source, debug_level=0, expose=True):
+        # type: (str, int, bool) -> InterpretResult
         """
         """
         bytecode = chunk.Chunk()
         self.expose = expose
 
-        if not compiler.compile(source, bytecode, debug):
+        if not compiler.compile(source, bytecode, debug_level):
             bytecode.free_chunk()
             return InterpretResult.INTERPRET_COMPILE_ERROR
 
@@ -155,6 +155,14 @@ class VM():
 
             elif instruction == chunk.OpCode.OP_POP:
                 self.pop()
+
+            elif instruction == chunk.OpCode.OP_GET_LOCAL:
+                slot = read_byte()
+                self.push(self.stack[slot])
+
+            elif instruction == chunk.OpCode.OP_SET_LOCAL:
+                slot = read_byte()
+                self.stack[slot] = self.peek(0)
 
             elif instruction == chunk.OpCode.OP_GET_GLOBAL:
                 name = read_string()

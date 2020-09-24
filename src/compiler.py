@@ -1,3 +1,4 @@
+import sys
 from enum import Enum
 from typing import Any
 
@@ -6,10 +7,8 @@ import debug
 import scanner
 import value
 
-DEBUG_PRINT_CODE = True
-
 UINT8_MAX = 256
-UINT8_COUNT = UINT8_MAX + 1
+UINT8_COUNT = 8  # UINT8_MAX + 1
 
 
 # yapf: disable
@@ -96,13 +95,13 @@ class Compiler():
         #
         """
         """
-        self.locals = [Local()] * UINT8_COUNT
+        self.locals = [Local() for _ in range(UINT8_COUNT)]
         self.local_count = 0
         self.scope_depth = 0
 
 
 class Parser():
-    def __init__(self, reader, composer, bytecode, debug):
+    def __init__(self, reader, composer, bytecode, debug_level):
         # type: (scanner.Scanner, Compiler, chunk.Chunk, bool) -> None
         """
         """
@@ -113,7 +112,7 @@ class Parser():
         self.previous = None
         self.had_error = False
         self.panic_mode = False
-        self.debug = debug
+        self.debug_level = debug_level
 
     def current_chunk(self):
         #
@@ -164,6 +163,9 @@ class Parser():
 
         while True:
             self.current = self.reader.scan_token()
+
+            if self.debug_level >= 2:
+                print(self.current.token_type)
 
             if self.current.token_type != scanner.TokenType.TOKEN_ERROR:
                 break
@@ -239,7 +241,7 @@ class Parser():
         """
         self.emit_return()
 
-        if self.debug and not self.had_error:
+        if self.debug_level >= 1 and not self.had_error:
             debug.disassemble_chunk(self.current_chunk(), "code")
 
     def begin_scope(self):
@@ -337,13 +339,21 @@ class Parser():
         #
         """
         """
-        arg = self.identifier_constant(name)
+        arg = self.resolve_local(name)
+
+        if arg != -1:
+            get_op = chunk.OpCode.OP_GET_LOCAL
+            set_op = chunk.OpCode.OP_SET_LOCAL
+        else:
+            arg = self.identifier_constant(name)
+            get_op = chunk.OpCode.OP_GET_GLOBAL
+            set_op = chunk.OpCode.OP_SET_GLOBAL
 
         if can_assign and self.match(scanner.TokenType.TOKEN_EQUAL):
             self.expression()
-            self.emit_bytes(chunk.OpCode.OP_SET_GLOBAL, arg)
+            self.emit_bytes(set_op, arg)
         else:
-            self.emit_bytes(chunk.OpCode.OP_GET_GLOBAL, arg)
+            self.emit_bytes(get_op, arg)
 
     def variable(self, can_assign):
         # type: (bool) -> None
@@ -400,19 +410,37 @@ class Parser():
         return self.make_constant(obj_val)
 
     @staticmethod
-    def identifiers_equal(self, a, b):
+    def identifiers_equal(a, b):
         #
         """
         """
-        if a.length != b.length:
+        if not a or not b or a.length != b.length:
             return False
 
-        return a == b
+        return a.source == b.source
+
+    def resolve_local(self, name):
+        #
+        """
+        """
+        if self.debug_level >= 3:
+            print("  {}".format(sys._getframe().f_code.co_name))
+
+        for i in range(self.composer.local_count - 1, -1, -1):
+            local = self.composer.locals[i]
+
+            if self.identifiers_equal(name, local.name):
+                return i
+
+        return -1
 
     def add_local(self, name):
         #
         """
         """
+        if self.debug_level >= 3:
+            print("  {}".format(sys._getframe().f_code.co_name))
+
         if self.composer.local_count == UINT8_COUNT:
             self.error("Too many local variables in function.")
             return None
@@ -426,6 +454,9 @@ class Parser():
         #
         """
         """
+        if self.debug_level >= 3:
+            print("  {}".format(sys._getframe().f_code.co_name))
+
         # Global variables are implicitly declared
         if self.composer.scope_depth == 0:
             return None
@@ -447,8 +478,10 @@ class Parser():
         #
         """
         """
-        self.consume(scanner.TokenType.TOKEN_IDENTIFIER, error_message)
+        if self.debug_level >= 3:
+            print("  {}".format(sys._getframe().f_code.co_name))
 
+        self.consume(scanner.TokenType.TOKEN_IDENTIFIER, error_message)
         self.declare_variable()
 
         if self.composer.scope_depth > 0:
@@ -460,6 +493,9 @@ class Parser():
         #
         """
         """
+        if self.debug_level >= 3:
+            print("  {}".format(sys._getframe().f_code.co_name))
+
         if self.composer.scope_depth > 0:
             return None
 
@@ -579,7 +615,7 @@ class Parser():
             self.expression_statement()
 
 
-def compile(source, bytecode, debug):
+def compile(source, bytecode, debug_level):
     # type: (str, chunk.Chunk, bool) -> None
     """KIV change this to Compiler class with method compile."""
     reader = scanner.Scanner(source)
@@ -589,8 +625,11 @@ def compile(source, bytecode, debug):
         reader=reader,
         composer=composer,
         bytecode=bytecode,
-        debug=debug,
+        debug_level=debug_level,
     )
+
+    if parser.debug_level >= 2:
+        print("\n== tokens ==")
 
     parser.advance()
 
@@ -598,5 +637,4 @@ def compile(source, bytecode, debug):
         parser.declaration()
 
     parser.end_compiler()
-
     return not parser.had_error
