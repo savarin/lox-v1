@@ -1,3 +1,4 @@
+import sys
 from enum import Enum
 from typing import Any
 
@@ -93,24 +94,24 @@ class Compiler():
         #
         """
         """
-        self.locals = None  # type: List[Local]
+        self.locals = [Local() for _ in range(UINT8_COUNT)]  # type: List[Local]
         self.local_count = 0
         self.scope_depth = 0
 
 
 class Parser():
-    def __init__(self, reader, composer, bytecode, debug):
-        # type: (scanner.Scanner, chunk.Chunk, bool) -> None
+    def __init__(self, reader, composer, bytecode, debug_level):
+        # type: (scanner.Scanner, Compiler, chunk.Chunk, bool) -> None
         """
         """
         self.reader = reader
         self.composer = composer
         self.bytecode = bytecode  # referred to in text as compiling_chunk
-        self.debug = debug
         self.current = None  # type: scanner.Token
         self.previous = None  # type: scanner.Token
         self.had_error = False
         self.panic_mode = False
+        self.debug_level = debug_level
 
     def current_chunk(self):
         #
@@ -161,6 +162,9 @@ class Parser():
 
         while True:
             self.current = self.reader.scan_token()
+
+            if self.debug_level >= 2 and self.current.token_type:
+                print(self.current.token_type)
 
             if self.current.token_type != scanner.TokenType.TOKEN_ERROR:
                 break
@@ -236,7 +240,7 @@ class Parser():
         """
         self.emit_return()
 
-        if self.debug and not self.had_error:
+        if self.debug_level >= 1 and not self.had_error:
             debug.disassemble_chunk(self.current_chunk(), "code")
 
     def begin_scope(self):
@@ -255,7 +259,7 @@ class Parser():
                and self.composer.locals[self.composer.local_count - 1].depth >
                self.composer.scope_depth):
             self.emit_byte(chunk.OpCode.OP_POP)
-            self.current.local_count -= 1
+            self.composer.local_count -= 1
 
     def binary(self, can_assign):
         #
@@ -406,26 +410,29 @@ class Parser():
         obj_val = value.obj_val(value.copy_string(chars, name.length))
         return self.make_constant(obj_val)
 
-    def identifiers_equal(self, a, b):
+    @staticmethod
+    def identifiers_equal(a, b):
         #
         """
         """
-        if a.length != b.length:
+        if not a or not b or a.length != b.length:
             return False
 
-        return a == b
+        return a.source == b.source
 
     def resolve_local(self, name):
         #
         """
         """
+        if self.debug_level >= 3:
+            print("  {}".format(sys._getframe().f_code.co_name))
+
         for i in range(self.composer.local_count - 1, -1, -1):
             local = self.composer.locals[i]
 
             if self.identifiers_equal(name, local.name):
                 if local.depth == -1:
-                    self.error(
-                        "Cannot read local variable in its own initializer.")
+                    self.error("Cannot read local variable in its own initializer.")
 
                 return i
 
@@ -435,11 +442,16 @@ class Parser():
         #
         """
         """
+        if self.debug_level >= 3:
+            print("  {}".format(sys._getframe().f_code.co_name))
+
         if self.composer.local_count == UINT8_COUNT:
             self.error("Too many local variables in function.")
             return None
 
-        local = self.composer.locals[self.composer.local_count + 1]
+        local = self.composer.locals[self.composer.local_count]
+        self.composer.local_count += 1
+
         local.name = name
         local.depth = -1
 
@@ -447,7 +459,10 @@ class Parser():
         #
         """
         """
-        # Global variables are implicitly declared.
+        if self.debug_level >= 3:
+            print("  {}".format(sys._getframe().f_code.co_name))
+
+        # Global variables are implicitly declared
         if self.composer.scope_depth == 0:
             return None
 
@@ -460,7 +475,7 @@ class Parser():
                 break
 
             if self.identifiers_equal(name, local.name):
-                error(
+                self.error(
                     "Variable with this name already declared in this scope.")
 
         self.add_local(name)
@@ -469,6 +484,9 @@ class Parser():
         #
         """
         """
+        if self.debug_level >= 3:
+            print("  {}".format(sys._getframe().f_code.co_name))
+
         self.consume(scanner.TokenType.TOKEN_IDENTIFIER, error_message)
         self.declare_variable()
 
@@ -481,13 +499,15 @@ class Parser():
         #
         """
         """
-        index = self.composer.local_count - 1
-        self.composer.locals[index].depth = self.composer.scope_depth
+        self.composer.locals[self.composer.local_count - 1].depth = self.composer.scope_depth
 
     def define_variable(self, global_var):
         #
         """
         """
+        if self.debug_level >= 3:
+            print("  {}".format(sys._getframe().f_code.co_name))
+
         if self.composer.scope_depth > 0:
             self.mark_initialized()
             return None
@@ -528,9 +548,8 @@ class Parser():
         #
         """
         """
-        while not self.check(
-                scanner.TokenType.TOKEN_RIGHT_BRACE) and not self.check(
-                    scanner.TokenType.TOKEN_EOF):
+        while (not self.check(scanner.TokenType.TOKEN_RIGHT_BRACE)
+               and not self.check(scanner.TokenType.TOKEN_EOF)):
             self.declaration()
 
         self.consume(scanner.TokenType.TOKEN_RIGHT_BRACE,
@@ -611,7 +630,7 @@ class Parser():
             self.expression_statement()
 
 
-def compile(source, bytecode, debug):
+def compile(source, bytecode, debug_level):
     # type: (str, chunk.Chunk, bool) -> None
     """KIV change this to Compiler class with method compile."""
     reader = scanner.Scanner(source)
@@ -621,8 +640,11 @@ def compile(source, bytecode, debug):
         reader=reader,
         composer=composer,
         bytecode=bytecode,
-        debug=debug,
+        debug_level=debug_level,
     )
+
+    if parser.debug_level >= 2:
+        print("\n== tokens ==")
 
     parser.advance()
 
@@ -630,5 +652,4 @@ def compile(source, bytecode, debug):
         parser.declaration()
 
     parser.end_compiler()
-
     return not parser.had_error

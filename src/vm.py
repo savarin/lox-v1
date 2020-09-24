@@ -46,8 +46,9 @@ class VM():
         # type: (Union[str, List[str]]) -> None
         """
         """
-        print(messages if isinstance(messages, str) else " ".join(messages))
-        print("[line {} in script]".format(self.bytecode.lines[self.ip]))
+        if self.expose:
+            print(messages if isinstance(messages, str) else " ".join(messages))
+            print("[line {} in script]".format(self.bytecode.lines[self.ip]))
 
         self.reset_stack()
 
@@ -94,14 +95,14 @@ class VM():
         result = value.take_string(chars, length)
         self.push(value.obj_val(result))
 
-    def interpret(self, source, debug=False, expose=True):
-        # type: (str, bool, bool) -> InterpretResult
+    def interpret(self, source, debug_level=0, expose=True):
+        # type: (str, int, bool) -> InterpretResult
         """
         """
         bytecode = chunk.Chunk()
         self.expose = expose
 
-        if not compiler.compile(source, bytecode, debug):
+        if not compiler.compile(source, bytecode, debug_level):
             bytecode.free_chunk()
             return InterpretResult.INTERPRET_COMPILE_ERROR
 
@@ -158,6 +159,10 @@ class VM():
 
             elif instruction == chunk.OpCode.OP_GET_LOCAL:
                 slot = read_byte()
+                self.push(self.stack[slot])
+
+            elif instruction == chunk.OpCode.OP_SET_LOCAL:
+                slot = read_byte()
                 self.stack[slot] = self.peek(0)
 
             elif instruction == chunk.OpCode.OP_GET_GLOBAL:
@@ -177,11 +182,8 @@ class VM():
                 self.globals.table_set(name, self.peek(0))
                 self.pop()
 
-            elif instruction == chunk.OpCode.OP_SET_LOCAL:
-                slot = read_byte()
-                self.push(self.stack[slot])
-
             elif instruction == chunk.OpCode.OP_SET_GLOBAL:
+                # TODO: Resolve set global
                 name = read_string()
 
                 if self.globals.table_set(name, self.peek(0)):

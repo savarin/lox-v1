@@ -6,7 +6,7 @@ def disassemble_chunk(bytecode, name):
     #
     """
     """
-    print("== {} ==".format(name))
+    print("\n== {} ==".format(name))
 
     offset = 0
 
@@ -38,9 +38,9 @@ def disassemble_instruction(bytecode, offset):
     elif instruction == chunk.OpCode.OP_POP:
         return simple_instruction("OP_POP", offset)
     elif instruction == chunk.OpCode.OP_GET_LOCAL:
-        return constant_instruction("OP_GET_LOCAL", bytecode, offset)
+        return byte_instruction("OP_GET_LOCAL", bytecode, offset)
     elif instruction == chunk.OpCode.OP_SET_LOCAL:
-        return constant_instruction("OP_SET_LOCAL", bytecode, offset)
+        return byte_instruction("OP_SET_LOCAL", bytecode, offset)
     elif instruction == chunk.OpCode.OP_GET_GLOBAL:
         return constant_instruction("OP_GET_GLOBAL", bytecode, offset)
     elif instruction == chunk.OpCode.OP_DEFINE_GLOBAL:
@@ -87,7 +87,8 @@ def byte_instruction(name, bytecode, offset):
     """
     """
     slot = bytecode.code[offset + 1]
-    print("{:16s} {:4d} '{}'", name, slot)
+
+    print("{:16s} {:4d}".format(name, slot))
     return offset + 2
 
 
@@ -96,8 +97,9 @@ def constant_instruction(name, bytecode, offset):
     """
     """
     constant = bytecode.code[offset + 1]
-    print("{:16s} {:4d} '{}'".format(
-        name, constant, convert_value(bytecode.constants.values[constant])))
+    val = convert_value(bytecode.constants.values[constant])
+
+    print("{:16s} {:4d} '{}'".format(name, constant, val))
     return offset + 2
 
 

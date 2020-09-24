@@ -5,6 +5,32 @@ import debug
 import vm
 
 
+def main():
+    emulator = vm.VM()
+    size = len(sys.argv)
+
+    if size == 1:
+        # Run custom test instead of repl
+        run_custom(emulator)
+    elif size == 2:
+        run_file(emulator, sys.argv[1])
+    elif size == 3:
+        run_file(emulator, sys.argv[1], sys.argv[2])
+    else:
+        print("Usage: clox [path]")
+        exit_with_code(64)
+
+    emulator.free_vm()
+
+
+def exit_with_code(error_code):
+    #
+    """
+    """
+    print("Exit: {}".format(error_code))
+    sys.exit()
+
+
 def repl(emulator):
     #
     """
@@ -19,14 +45,14 @@ def repl(emulator):
         emulator.interpret(line)
 
 
-def run_file(path):
+def run_file(emulator, path, debug_level=0):
     #
     """
     """
     with open(path, "r") as f:
         source = f.read()
 
-    result = emulator.interpret(source, True, True)
+    result = emulator.interpret(source, int(debug_level), True)
 
     if result == vm.InterpretResult.INTERPRET_COMPILE_ERROR:
         exit_with_code(65)
@@ -35,43 +61,59 @@ def run_file(path):
         exit_with_code(70)
 
 
-def run_custom():
+def run_custom(emulator):
     #
     """
     """
-    source = [
-        """\
+    source = """\
 let breakfast = "beignets";
 let beverage = "cafe au lait";
 breakfast = "beignets with " + beverage;
 
-print breakfast;""",
-    ]
+print breakfast;"""
 
-    result = emulator.interpret(source[0], False, False)
+    emulator.free_vm()
+    result = emulator.interpret(source, 0, False)
     assert "".join(
         emulator.result.value_as.chars)[:-1] == "beignets with cafe au lait"
 
+    source = """\
+{
+    let breakfast = "beignets";
 
-def exit_with_code(error_code):
-    #
-    """
-    """
-    print("Exit: {}".format(error_code))
-    sys.exit()
+    {
+        let beverage = "cafe au lait";
+        breakfast = "beignets with " + beverage;
+
+        print breakfast;
+    }
+}"""
+
+    emulator.free_vm()
+    result = emulator.interpret(source, 0, False)
+    assert "".join(
+        emulator.result.value_as.chars)[:-1] == "beignets with cafe au lait"
+
+    source = """\
+{
+    let breakfast = "beignets";
+
+    {
+        let beverage = "cafe au lait";
+        breakfast = "beignets with " + beverage;
+
+        print breakfast;
+    }
+
+    print beverage;
+}"""
+
+    emulator.free_vm()
+    result = emulator.interpret(source, 0, False)
+    assert "".join(
+        emulator.result.value_as.chars)[:-1] == "beignets with cafe au lait"
+    assert result == vm.InterpretResult.INTERPRET_RUNTIME_ERROR
 
 
 if __name__ == "__main__":
-    emulator = vm.VM()
-    size = len(sys.argv)
-
-    if size == 1:
-        # Run custom test instead of repl
-        run_custom()
-    elif size == 2:
-        run_file(sys.argv[1])
-    else:
-        print("Usage: clox [path]")
-        exit_with_code(64)
-
-    emulator.free_vm()
+    main()
