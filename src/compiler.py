@@ -163,7 +163,7 @@ class Parser():
         while True:
             self.current = self.reader.scan_token()
 
-            if self.debug_level >= 2:
+            if self.debug_level >= 2 and self.current.token_type:
                 print(self.current.token_type)
 
             if self.current.token_type != scanner.TokenType.TOKEN_ERROR:
@@ -431,6 +431,9 @@ class Parser():
             local = self.composer.locals[i]
 
             if self.identifiers_equal(name, local.name):
+                if local.depth == -1:
+                    self.error("Cannot read local variable in its own initializer.")
+
                 return i
 
         return -1
@@ -450,7 +453,7 @@ class Parser():
         self.composer.local_count += 1
 
         local.name = name
-        local.depth = self.composer.scope_depth
+        local.depth = -1
 
     def declare_variable(self):
         #
@@ -492,6 +495,12 @@ class Parser():
 
         return self.identifier_constant(self.previous)
 
+    def mark_initialized(self):
+        #
+        """
+        """
+        self.composer.locals[self.composer.local_count - 1].depth = self.composer.scope_depth
+
     def define_variable(self, global_var):
         #
         """
@@ -500,6 +509,7 @@ class Parser():
             print("  {}".format(sys._getframe().f_code.co_name))
 
         if self.composer.scope_depth > 0:
+            self.mark_initialized()
             return None
 
         self.emit_bytes(chunk.OpCode.OP_DEFINE_GLOBAL, global_var)

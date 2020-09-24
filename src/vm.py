@@ -46,8 +46,9 @@ class VM():
         # type: (Union[str, List[str]]) -> None
         """
         """
-        print(messages if isinstance(messages, str) else " ".join(messages))
-        print("[line {} in script]".format(self.bytecode.lines[self.ip]))
+        if self.expose:
+            print(messages if isinstance(messages, str) else " ".join(messages))
+            print("[line {} in script]".format(self.bytecode.lines[self.ip]))
 
         self.reset_stack()
 
