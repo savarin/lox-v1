@@ -6,36 +6,7 @@ import debug
 import scanner
 import value
 
-DEBUG_PRINT_CODE = True
-
 UINT8_MAX = 256
-
-
-# yapf: disable
-class Precedence(Enum):
-    PREC_NONE = 1
-    PREC_ASSIGNMENT = 2  # =
-    PREC_OR = 3          # or
-    PREC_AND = 4         # and
-    PREC_EQUALITY = 5    # == !=
-    PREC_COMPARISON = 6  # < > <= >=
-    PREC_TERM = 7        # + -
-    PREC_FACTOR = 8      # * /
-    PREC_UNARY = 9       # ! -
-    PREC_CALL = 10       # . ()
-    PREC_PRIMARY = 11
-# yapf: enable
-
-
-class ParseRule():
-    def __init__(self, prefix, infix, precedence):
-        #
-        """
-        """
-        self.prefix = prefix
-        self.infix = infix
-        self.precedence = precedence
-
 
 # yapf: disable
 rule_map = {
@@ -80,7 +51,50 @@ rule_map = {
     "TOKEN_ERROR":         [None,       None,     "PREC_NONE"],
     "TOKEN_EOF":           [None,       None,     "PREC_NONE"],
 }
+
+
+class Precedence(Enum):
+    PREC_NONE = 1
+    PREC_ASSIGNMENT = 2  # =
+    PREC_OR = 3          # or
+    PREC_AND = 4         # and
+    PREC_EQUALITY = 5    # == !=
+    PREC_COMPARISON = 6  # < > <= >=
+    PREC_TERM = 7        # + -
+    PREC_FACTOR = 8      # * /
+    PREC_UNARY = 9       # ! -
+    PREC_CALL = 10       # . ()
+    PREC_PRIMARY = 11
 # yapf: enable
+
+
+class ParseRule():
+    def __init__(self, prefix, infix, precedence):
+        #
+        """
+        """
+        self.prefix = prefix
+        self.infix = infix
+        self.precedence = precedence
+
+
+class Local():
+    def __init__(self):
+        #
+        """
+        """
+        self.name = None  # type: scanner.TokenType
+        self.depth = 0
+
+
+class Compiler():
+    def __init__(self):
+        #
+        """
+        """
+        self.locals = None  # type: List[Local]
+        self.local_count = 0
+        self.scope_depth = 0
 
 
 class Parser():
@@ -482,6 +496,7 @@ def compile(source, bytecode, debug):
     # type: (str, chunk.Chunk, bool) -> None
     """KIV change this to Compiler class with method compile."""
     reader = scanner.Scanner(source)
+    compiler = Compiler()
     parser = Parser(reader=reader, bytecode=bytecode, debug=debug)
 
     parser.advance()
