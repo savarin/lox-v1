@@ -28,7 +28,7 @@ class VM():
 
         # Custom attribute for testing
         self.result = None
-        self.debug = False
+        self.expose = True
 
     def free_vm(self):
         #
@@ -95,7 +95,7 @@ class VM():
         self.push(value.obj_val(result))
 
     def interpret(self, source, debug=False, expose=True):
-        # type: (str, False) -> InterpretResult
+        # type: (str, bool, bool) -> InterpretResult
         """
         """
         bytecode = chunk.Chunk()
