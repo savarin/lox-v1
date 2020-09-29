@@ -639,6 +639,57 @@ class Parser():
         self.consume(scanner.TokenType.TOKEN_SEMICOLON, "Expect ';' after expression.")
         self.emit_byte(chunk.OpCode.OP_POP)
 
+    def for_statement(self):
+        #
+        """
+        """
+        self.begin_scope()
+
+        self.consume(scanner.TokenType.TOKEN_LEFT_PAREN, "Expect '(' after 'for'")
+
+        # Initializer clause. Allow either variable declaration or expression.
+        if self.match(scanner.TokenType.TOKEN_SEMICOLON):
+            pass
+        elif self.match(scanner.TokenType.TOKEN_VAR):
+            self.var_declaration()
+        else:
+            self.expression_statement()
+
+        loop_start = self.current_chunk().count
+
+        # Exit clause with condition expression
+        exit_jump = -1
+
+        if not self.match(scanner.TokenType.TOKEN_SEMICOLON):
+            self.expression()
+            self.consume(scanner.TokenType.TOKEN_SEMICOLON, "Expect ';' after loop condition.")
+
+            # Jump out of loop if the condition is false
+            exit_jump = self.emit_jump(chunk.OpCode.OP_JUMP_IF_FALSE)
+            self.emit_byte(chunk.OpCode.OP_POP)
+
+        # Increment clause
+        if not self.match(scanner.TokenType.TOKEN_RIGHT_PAREN):
+            body_jump = self.emit_jump(chunk.OpCode.OP_JUMP)
+            increment_start = self.current_chunk().count
+
+            self.expression()
+            self.emit_byte(chunk.OpCode.OP_POP)
+            self.consume(scanner.TokenType.TOKEN_RIGHT_PAREN, "Expect ')' after for clauses")
+
+            self.emit_loop(loop_start)
+            loop_start = increment_start
+            self.patch_jump(body_jump)
+
+        self.statement()
+        self.emit_loop(loop_start)
+
+        if exit_jump != -1:
+            self.patch_jump(exit_jump)
+            self.emit_byte(chunk.OpCode.OP_POP)
+
+        self.end_scope()
+
     def if_statement(self):
         #
         """
@@ -722,6 +773,8 @@ class Parser():
         """
         if self.match(scanner.TokenType.TOKEN_PRINT):
             self.print_statement()
+        elif self.match(scanner.TokenType.TOKEN_FOR):
+            self.for_statement()
         elif self.match(scanner.TokenType.TOKEN_IF):
             self.if_statement()
         elif self.match(scanner.TokenType.TOKEN_WHILE):

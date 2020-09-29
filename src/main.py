@@ -171,6 +171,17 @@ print breakfast;"""
 
     assert interpret(emulator, source, "beignets and beignets and beignets")[1]
 
+    source = """\
+let breakfast = "beignets";
+
+for (let counter = 0; counter < 2; counter = counter + 1) {
+    breakfast = breakfast + " and beignets";
+}
+
+print breakfast;"""
+
+    assert interpret(emulator, source, "beignets and beignets and beignets")[1]
+
 
 if __name__ == "__main__":
     main()
