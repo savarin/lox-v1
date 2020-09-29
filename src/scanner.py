@@ -99,8 +99,7 @@ class Scanner():
         #
         """
         """
-        return ((char >= "a" and char <= "z") or (char >= "A" and char <= "Z")
-                or char == "_")
+        return ((char >= "a" and char <= "z") or (char >= "A" and char <= "Z") or char == "_")
 
     def is_digit(self, char):
         #
@@ -201,8 +200,8 @@ class Scanner():
         """
         index = self.start + start
 
-        if (self.current - self.start == start +
-                length) and (self.source[index:index + length] == rest):
+        if (self.current - self.start == start + length) and (self.source[index:index + length]
+                                                              == rest):
             return token_type
 
     def identifier_type(self):
@@ -238,8 +237,7 @@ class Scanner():
             if self.current - self.start > 1:
                 next_char = self.source[self.start + 1]
                 if next_char == "a":
-                    return self.check_keyword(2, 3, "lse",
-                                              TokenType.TOKEN_FALSE)
+                    return self.check_keyword(2, 3, "lse", TokenType.TOKEN_FALSE)
                 if next_char == "o":
                     return self.check_keyword(2, 1, "r", TokenType.TOKEN_FOR)
                 if next_char == "u":

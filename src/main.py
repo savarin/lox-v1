@@ -74,8 +74,7 @@ print breakfast;"""
 
     emulator.free_vm()
     result = emulator.interpret(source, 0, False)
-    assert "".join(
-        emulator.result.value_as.chars)[:-1] == "beignets with cafe au lait"
+    assert "".join(emulator.result.value_as.chars)[:-1] == "beignets with cafe au lait"
 
     source = """\
 {
@@ -91,8 +90,7 @@ print breakfast;"""
 
     emulator.free_vm()
     result = emulator.interpret(source, 0, False)
-    assert "".join(
-        emulator.result.value_as.chars)[:-1] == "beignets with cafe au lait"
+    assert "".join(emulator.result.value_as.chars)[:-1] == "beignets with cafe au lait"
 
     source = """\
 {
@@ -110,9 +108,55 @@ print breakfast;"""
 
     emulator.free_vm()
     result = emulator.interpret(source, 0, False)
-    assert "".join(
-        emulator.result.value_as.chars)[:-1] == "beignets with cafe au lait"
+    assert "".join(emulator.result.value_as.chars)[:-1] == "beignets with cafe au lait"
     assert result == vm.InterpretResult.INTERPRET_RUNTIME_ERROR
+
+    source = """\
+{
+    let breakfast = "beignets";
+
+    {
+        let beverage = "cafe au lait";
+        breakfast = "beignets with " + beverage;
+
+        print breakfast;
+    }
+
+    print beverage;
+}"""
+
+    emulator.free_vm()
+    result = emulator.interpret(source, 0, False)
+    assert "".join(emulator.result.value_as.chars)[:-1] == "beignets with cafe au lait"
+    assert result == vm.InterpretResult.INTERPRET_RUNTIME_ERROR
+
+    source = """\
+let breakfast = "beignets";
+let beverage = "cafe au lait";
+
+if (true) {
+    print breakfast;
+} else {
+    print beverage;
+}"""
+
+    emulator.free_vm()
+    result = emulator.interpret(source, 0, False)
+    assert "".join(emulator.result.value_as.chars)[:-1] == "beignets"
+
+    source = """\
+let breakfast = "beignets";
+let beverage = "cafe au lait";
+
+if (false) {
+    print breakfast;
+} else {
+    print beverage;
+}"""
+
+    emulator.free_vm()
+    result = emulator.interpret(source, 0, False)
+    assert "".join(emulator.result.value_as.chars)[:-1] == "cafe au lait"
 
 
 if __name__ == "__main__":

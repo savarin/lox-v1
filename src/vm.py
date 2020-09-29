@@ -125,6 +125,10 @@ class VM():
         def read_constant():
             return self.bytecode.constants.values[read_byte()]
 
+        def read_short():
+            self.ip += 2
+            return self.bytecode.code[self.ip - 2] << 8 or self.bytecode.code[self.ip - 1]
+
         def read_string():
             return read_constant().as_string()
 
@@ -170,8 +174,7 @@ class VM():
                 val = self.globals.table_get(name)
 
                 if not val:
-                    self.runtime_error("Undefined variable '{}'.".format(
-                        name.chars))
+                    self.runtime_error("Undefined variable '{}'.".format(name.chars))
                     return InterpretResult.INTERPRET_RUNTIME_ERROR
 
                 self.push(val)
@@ -210,8 +213,7 @@ class VM():
                     a = self.pop().as_number()
                     self.push(value.number_val(a + b))
                 else:
-                    self.runtime_error(
-                        "Operands must be two numbers or two strings.")
+                    self.runtime_error("Operands must be two numbers or two strings.")
                     return InterpretResult.INTERPRET_RUNTIME_ERROR
 
             elif instruction == chunk.OpCode.OP_SUBTRACT:
@@ -238,6 +240,16 @@ class VM():
 
                 if self.expose:
                     self.result.print_value()
+
+            elif instruction == chunk.OpCode.OP_JUMP:
+                offset = read_short()
+                self.ip += offset
+
+            elif instruction == chunk.OpCode.OP_JUMP_IF_FALSE:
+                offset = read_short()
+
+                if self.is_falsey(self.peek(0)):
+                    self.ip += offset
 
             elif instruction == chunk.OpCode.OP_RETURN:
                 return InterpretResult.INTERPRET_OK

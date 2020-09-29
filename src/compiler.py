@@ -8,6 +8,7 @@ import scanner
 import value
 
 UINT8_MAX = 256
+UINT16_MAX = 65536
 UINT8_COUNT = UINT8_MAX + 1
 
 # yapf: disable
@@ -135,8 +136,7 @@ class Parser():
         elif token.token_type == scanner.TokenType.TOKEN_ERROR:
             pass
         else:
-            current_token = self.reader.source[token.start:(token.start +
-                                                            token.length)]
+            current_token = self.reader.source[token.start:(token.start + token.length)]
             print("at {}".format(current_token), end="")
 
         print(": {}".format(message))
@@ -210,6 +210,16 @@ class Parser():
         self.emit_byte(byte1)
         self.emit_byte(byte2)
 
+    def emit_jump(self, instruction):
+        #
+        """
+        """
+        self.emit_byte(instruction)
+        self.emit_byte(0xff)
+        self.emit_byte(0xff)
+
+        return self.current_chunk().count - 2
+
     def emit_return(self):
         #
         """
@@ -233,6 +243,19 @@ class Parser():
         """
         """
         self.emit_bytes(chunk.OpCode.OP_CONSTANT, self.make_constant(val))
+
+    def patch_jump(self, offset):
+        #
+        """
+        """
+        # -2 to adust for the bytecode for the jump offset itself
+        jump = self.current_chunk().count - offset - 2
+
+        if jump > UINT16_MAX:
+            self.error("Too much code to jump over")
+
+        self.current_chunk().code[offset] = jump >> 8 & 0xff
+        self.current_chunk().code[offset + 1] = jump & 0xff
 
     def end_compiler(self):
         #
@@ -391,8 +414,7 @@ class Parser():
         can_assign = precedence.value <= Precedence.PREC_ASSIGNMENT.value
         prefix_rule(can_assign)
 
-        while precedence.value <= self.get_rule(
-                self.current.token_type).precedence.value:
+        while precedence.value <= self.get_rule(self.current.token_type).precedence.value:
             self.advance()
 
             infix_rule = self.get_rule(self.previous.token_type).infix
@@ -475,8 +497,7 @@ class Parser():
                 break
 
             if self.identifiers_equal(name, local.name):
-                self.error(
-                    "Variable with this name already declared in this scope.")
+                self.error("Variable with this name already declared in this scope.")
 
         self.add_local(name)
 
@@ -499,7 +520,8 @@ class Parser():
         #
         """
         """
-        self.composer.locals[self.composer.local_count - 1].depth = self.composer.scope_depth
+        local_count = self.composer.local_count - 1
+        self.composer.locals[local_count].depth = self.composer.scope_depth
 
     def define_variable(self, global_var):
         #
@@ -552,8 +574,7 @@ class Parser():
                and not self.check(scanner.TokenType.TOKEN_EOF)):
             self.declaration()
 
-        self.consume(scanner.TokenType.TOKEN_RIGHT_BRACE,
-                     "Expect '}' after block.")
+        self.consume(scanner.TokenType.TOKEN_RIGHT_BRACE, "Expect '}' after block.")
 
     def var_declaration(self):
         #
@@ -566,8 +587,7 @@ class Parser():
         else:
             self.emit_byte(chunk.OpCode.OP_NIL)
 
-        self.consume(scanner.TokenType.TOKEN_SEMICOLON,
-                     "Expect ';' after variable declaration")
+        self.consume(scanner.TokenType.TOKEN_SEMICOLON, "Expect ';' after variable declaration")
 
         self.define_variable(global_var)
 
@@ -576,17 +596,37 @@ class Parser():
         """
         """
         self.expression()
-        self.consume(scanner.TokenType.TOKEN_SEMICOLON,
-                     "Expect ';' after expression.")
+        self.consume(scanner.TokenType.TOKEN_SEMICOLON, "Expect ';' after expression.")
         self.emit_byte(chunk.OpCode.OP_POP)
+
+    def if_statement(self):
+        #
+        """
+        """
+        self.consume(scanner.TokenType.TOKEN_LEFT_PAREN, "Expect '(' after 'if'")
+        self.expression()
+        self.consume(scanner.TokenType.TOKEN_RIGHT_PAREN, "Expect ')' after 'if'")
+
+        then_jump = self.emit_jump(chunk.OpCode.OP_JUMP_IF_FALSE)
+        self.emit_byte(chunk.OpCode.OP_POP)
+        self.statement()
+
+        else_jump = self.emit_jump(chunk.OpCode.OP_JUMP)
+
+        self.patch_jump(then_jump)
+        self.emit_byte(chunk.OpCode.OP_POP)
+
+        if self.match(scanner.TokenType.TOKEN_ELSE):
+            self.statement()
+
+        self.patch_jump(else_jump)
 
     def print_statement(self):
         #
         """
         """
         self.expression()
-        self.consume(scanner.TokenType.TOKEN_SEMICOLON,
-                     "Expect ';' after value.")
+        self.consume(scanner.TokenType.TOKEN_SEMICOLON, "Expect ';' after value.")
         self.emit_byte(chunk.OpCode.OP_PRINT)
 
     def synchronize(self):
@@ -622,6 +662,8 @@ class Parser():
         """
         if self.match(scanner.TokenType.TOKEN_PRINT):
             self.print_statement()
+        elif self.match(scanner.TokenType.TOKEN_IF):
+            self.if_statement()
         elif self.match(scanner.TokenType.TOKEN_LEFT_BRACE):
             self.begin_scope()
             self.block()

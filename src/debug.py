@@ -65,6 +65,10 @@ def disassemble_instruction(bytecode, offset):
         return simple_instruction("OP_NEGATE", offset)
     elif instruction == chunk.OpCode.OP_PRINT:
         return simple_instruction("OP_PRINT", offset)
+    elif instruction == chunk.OpCode.OP_JUMP:
+        return jump_instruction("OP_JUMP", 1, bytecode, offset)
+    elif instruction == chunk.OpCode.OP_JUMP_IF_FALSE:
+        return jump_instruction("OP_JUMP_IF_FALSE", 1, bytecode, offset)
     elif instruction == chunk.OpCode.OP_NOT:
         return simple_instruction("OP_NOT", offset)
     elif instruction == chunk.OpCode.OP_RETURN:
@@ -90,6 +94,17 @@ def byte_instruction(name, bytecode, offset):
 
     print("{:16s} {:4d}".format(name, slot))
     return offset + 2
+
+
+def jump_instruction(name, sign, bytecode, offset):
+    #
+    """
+    """
+    jump = bytecode.code[offset + 1] << 8
+    jump = jump | bytecode.code[offset + 2]
+
+    print("{:16s} {:4d} -> {}".format(name, offset, offset + 3 + sign * jump))
+    return offset + 3
 
 
 def constant_instruction(name, bytecode, offset):
