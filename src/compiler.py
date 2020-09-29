@@ -210,6 +210,20 @@ class Parser():
         self.emit_byte(byte1)
         self.emit_byte(byte2)
 
+    def emit_loop(self, loop_start):
+        #
+        """
+        """
+        self.emit_byte(chunk.OpCode.OP_LOOP)
+
+        offset = self.current_chunk().count - loop_start + 2
+
+        if offset > UINT16_MAX:
+            self.error("Loop body too large.")
+
+        self.emit_byte((offset >> 8) & 0xff)
+        self.emit_byte(offset & 0xff)
+
     def emit_jump(self, instruction):
         #
         """
@@ -655,6 +669,26 @@ class Parser():
         self.consume(scanner.TokenType.TOKEN_SEMICOLON, "Expect ';' after value.")
         self.emit_byte(chunk.OpCode.OP_PRINT)
 
+    def while_statement(self):
+        #
+        """
+        """
+        loop_start = self.current_chunk().count
+
+        self.consume(scanner.TokenType.TOKEN_LEFT_PAREN, "Expect '(' after 'if'")
+        self.expression()
+        self.consume(scanner.TokenType.TOKEN_RIGHT_PAREN, "Expect ')' after 'if'")
+
+        exit_jump = self.emit_jump(chunk.OpCode.OP_JUMP_IF_FALSE)
+
+        self.emit_byte(chunk.OpCode.OP_POP)
+        self.statement()
+
+        self.emit_loop(loop_start)
+
+        self.patch_jump(exit_jump)
+        self.emit_byte(chunk.OpCode.OP_POP)
+
     def synchronize(self):
         #
         """
@@ -690,6 +724,8 @@ class Parser():
             self.print_statement()
         elif self.match(scanner.TokenType.TOKEN_IF):
             self.if_statement()
+        elif self.match(scanner.TokenType.TOKEN_WHILE):
+            self.while_statement()
         elif self.match(scanner.TokenType.TOKEN_LEFT_BRACE):
             self.begin_scope()
             self.block()

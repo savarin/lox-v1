@@ -251,5 +251,9 @@ class VM():
                 if self.is_falsey(self.peek(0)):
                     self.ip += offset
 
+            elif instruction == chunk.OpCode.OP_LOOP:
+                offset = read_short()
+                self.ip -= offset
+
             elif instruction == chunk.OpCode.OP_RETURN:
                 return InterpretResult.INTERPRET_OK

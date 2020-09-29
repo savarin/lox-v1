@@ -27,6 +27,7 @@ class OpCode(Enum):
     OP_PRINT = "OP_PRINT"
     OP_JUMP = "OP_JUMP"
     OP_JUMP_IF_FALSE = "OP_JUMP_IF_FALSE"
+    OP_LOOP = "OP_LOOP"
     OP_RETURN = "OP_RETURN"
 
 
