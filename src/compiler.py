@@ -35,7 +35,7 @@ rule_map = {
     "TOKEN_IDENTIFIER":    ["variable", None,     "PREC_NONE"],
     "TOKEN_STRING":        ["string",   None,     "PREC_NONE"],
     "TOKEN_NUMBER":        ["number",   None,     "PREC_NONE"],
-    "TOKEN_AND":           [None,       None,     "PREC_NONE"],
+    "TOKEN_AND":           [None,       "and_op", "PREC_AND"],
     "TOKEN_CLASS":         [None,       None,     "PREC_NONE"],
     "TOKEN_ELSE":          [None,       None,     "PREC_NONE"],
     "TOKEN_FALSE":         ["literal",  None,     "PREC_NONE"],
@@ -43,7 +43,7 @@ rule_map = {
     "TOKEN_FUN":           [None,       None,     "PREC_NONE"],
     "TOKEN_IF":            [None,       None,     "PREC_NONE"],
     "TOKEN_NIL":           ["literal",  None,     "PREC_NONE"],
-    "TOKEN_OR":            [None,       None,     "PREC_NONE"],
+    "TOKEN_OR":            [None,       "or_op",  "PREC_OR"],
     "TOKEN_PRINT":         [None,       None,     "PREC_NONE"],
     "TOKEN_RETURN":        [None,       None,     "PREC_NONE"],
     "TOKEN_SUPER":         [None,       None,     "PREC_NONE"],
@@ -347,6 +347,19 @@ class Parser():
         val = float(self.previous.source)
         self.emit_constant(value.number_val(val))
 
+    def or_op(self, can_assign):
+        #
+        """
+        """
+        else_jump = self.emit_jump(chunk.OpCode.OP_JUMP_IF_FALSE)
+        end_jump = self.emit_jump(chunk.OpCode.OP_JUMP)
+
+        self.patch_jump(else_jump)
+        self.emit_byte(chunk.OpCode.OP_POP)
+
+        self.parse_precedence(Precedence.PREC_OR)
+        self.patch_jump(end_jump)
+
     def string(self, can_assign):
         # type: () -> None
         """Extracts relevant section from string, wraps in a ObjectString, wraps
@@ -536,6 +549,17 @@ class Parser():
 
         self.emit_bytes(chunk.OpCode.OP_DEFINE_GLOBAL, global_var)
 
+    def and_op(self, can_assign):
+        #
+        """
+        """
+        end_jump = self.emit_jump(chunk.OpCode.OP_JUMP_IF_FALSE)
+
+        self.emit_byte(chunk.OpCode.OP_POP)
+        self.parse_precedence(Precedence.PREC_AND)
+
+        self.patch_jump(end_jump)
+
     def get_rule(self, token_type):
         # type: (TokenType) -> ParseRule
         """Custom function to convert TokenType to ParseRule. This allows the
@@ -543,10 +567,12 @@ class Parser():
         classes in the conversion process.
         """
         type_map = {
+            "and_op": self.and_op,
             "binary": self.binary,
             "grouping": self.grouping,
             "literal": self.literal,
             "number": self.number,
+            "or_op": self.or_op,
             "string": self.string,
             "unary": self.unary,
             "variable": self.variable,
