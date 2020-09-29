@@ -204,6 +204,8 @@ class Scanner():
                                                               == rest):
             return token_type
 
+        return TokenType.TOKEN_IDENTIFIER
+
     def identifier_type(self):
         #
         """
