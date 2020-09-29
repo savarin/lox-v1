@@ -230,8 +230,8 @@ class Scanner():
             return self.check_keyword(1, 4, "rint", TokenType.TOKEN_PRINT)
         elif char == "r":
             return self.check_keyword(1, 5, "eturn", TokenType.TOKEN_RETURN)
-        elif char == "s":
-            return self.check_keyword(1, 4, "uper", TokenType.TOKEN_SUPER)
+        elif char == "t":
+            return self.check_keyword(1, 3, "rue", TokenType.TOKEN_TRUE)
         elif char == "w":
             return self.check_keyword(1, 4, "hile", TokenType.TOKEN_WHILE)
 
@@ -245,13 +245,13 @@ class Scanner():
                 if next_char == "u":
                     return self.check_keyword(2, 1, "n", TokenType.TOKEN_FUN)
 
-        elif char == "t":
+        elif char == "s":
             if self.current - self.start > 1:
                 next_char = self.source[self.start + 1]
-                if next_char == "h":
-                    return self.check_keyword(2, 2, "is", TokenType.TOKEN_THIS)
-                if next_char == "r":
-                    return self.check_keyword(2, 2, "ue", TokenType.TOKEN_TRUE)
+                if next_char == "e":
+                    return self.check_keyword(2, 2, "lf", TokenType.TOKEN_THIS)
+                if next_char == "u":
+                    return self.check_keyword(2, 3, "per", TokenType.TOKEN_SUPER)
 
         return TokenType.TOKEN_IDENTIFIER
 
