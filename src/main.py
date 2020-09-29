@@ -159,5 +159,20 @@ if (false) {
     assert "".join(emulator.result.value_as.chars)[:-1] == "cafe au lait"
 
 
+    source = """\
+let breakfast = "beignets";
+let counter = 0;
+
+while (counter < 2) {
+    breakfast = breakfast + " and beignets";
+    counter = counter + 1;
+}
+
+print breakfast;"""
+
+    emulator.free_vm()
+    result = emulator.interpret(source, 0, False)
+    assert "".join(emulator.result.value_as.chars)[:-1] == "beignets and beignets and bseignets"
+
 if __name__ == "__main__":
     main()
