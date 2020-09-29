@@ -61,6 +61,16 @@ def run_file(emulator, path, debug_level=0):
         exit_with_code(70)
 
 
+def interpret(emulator, source, target):
+    #
+    """
+    """
+    emulator.free_vm()
+    result = emulator.interpret(source, 0, False)
+
+    return result, "".join(emulator.result.value_as.chars)[:-1] == target
+
+
 def run_custom(emulator):
     #
     """
@@ -72,9 +82,7 @@ breakfast = "beignets with " + beverage;
 
 print breakfast;"""
 
-    emulator.free_vm()
-    result = emulator.interpret(source, 0, False)
-    assert "".join(emulator.result.value_as.chars)[:-1] == "beignets with cafe au lait"
+    assert interpret(emulator, source, "beignets with cafe au lait")[1]
 
     source = """\
 {
@@ -88,9 +96,7 @@ print breakfast;"""
     }
 }"""
 
-    emulator.free_vm()
-    result = emulator.interpret(source, 0, False)
-    assert "".join(emulator.result.value_as.chars)[:-1] == "beignets with cafe au lait"
+    assert interpret(emulator, source, "beignets with cafe au lait")[1]
 
     source = """\
 {
@@ -106,9 +112,8 @@ print breakfast;"""
     print beverage;
 }"""
 
-    emulator.free_vm()
-    result = emulator.interpret(source, 0, False)
-    assert "".join(emulator.result.value_as.chars)[:-1] == "beignets with cafe au lait"
+    result, assertion = interpret(emulator, source, "beignets with cafe au lait")
+    assert assertion
     assert result == vm.InterpretResult.INTERPRET_RUNTIME_ERROR
 
     source = """\
@@ -125,39 +130,33 @@ print breakfast;"""
     print beverage;
 }"""
 
-    emulator.free_vm()
-    result = emulator.interpret(source, 0, False)
-    assert "".join(emulator.result.value_as.chars)[:-1] == "beignets with cafe au lait"
+    result, assertion = interpret(emulator, source, "beignets with cafe au lait")
+    assert assertion
     assert result == vm.InterpretResult.INTERPRET_RUNTIME_ERROR
 
     source = """\
 let breakfast = "beignets";
 let beverage = "cafe au lait";
 
-if (true) {
+if (false or true) {
     print breakfast;
 } else {
     print beverage;
 }"""
 
-    emulator.free_vm()
-    result = emulator.interpret(source, 0, False)
-    assert "".join(emulator.result.value_as.chars)[:-1] == "beignets"
+    assert interpret(emulator, source, "beignets")[1]
 
     source = """\
 let breakfast = "beignets";
 let beverage = "cafe au lait";
 
-if (false) {
+if (false and true) {
     print breakfast;
 } else {
     print beverage;
 }"""
 
-    emulator.free_vm()
-    result = emulator.interpret(source, 0, False)
-    assert "".join(emulator.result.value_as.chars)[:-1] == "cafe au lait"
-
+    assert interpret(emulator, source, "cafe au lait")[1]
 
     source = """\
 let breakfast = "beignets";
@@ -170,9 +169,8 @@ while (counter < 2) {
 
 print breakfast;"""
 
-    emulator.free_vm()
-    result = emulator.interpret(source, 0, False)
-    assert "".join(emulator.result.value_as.chars)[:-1] == "beignets and beignets and bseignets"
+    assert interpret(emulator, source, "beignets and beignets and beignets")[1]
+
 
 if __name__ == "__main__":
     main()
