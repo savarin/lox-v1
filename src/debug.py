@@ -124,9 +124,10 @@ def convert_value(val):
     #
     """
     """
-    if isinstance(val, value.Value) and val.is_string():
-        return "".join(val.as_cstring()[:-1])
-    elif isinstance(val, value.Value) and val.is_number():
+    if isinstance(val, value.Value):
+        if val.is_string():
+            return "".join(val.as_cstring()[:-1])
+
         return val.value_as
 
     return val
