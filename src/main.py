@@ -6,21 +6,18 @@ import vm
 
 
 def main():
-    emulator = vm.VM()
     size = len(sys.argv)
 
     if size == 1:
         # Run custom test instead of repl
-        run_custom(emulator)
+        run_custom()
     elif size == 2:
-        run_file(emulator, sys.argv[1])
+        run_file(sys.argv[1])
     elif size == 3:
-        run_file(emulator, sys.argv[1], sys.argv[2])
+        run_file(sys.argv[1], sys.argv[2])
     else:
         print("Usage: clox [path]")
         exit_with_code(64)
-
-    emulator.free_vm()
 
 
 def exit_with_code(error_code):
@@ -31,10 +28,12 @@ def exit_with_code(error_code):
     sys.exit()
 
 
-def repl(emulator):
+def repl():
     #
     """
     """
+    emulator = vm.VM()
+
     while True:
         line = input("> ")
 
@@ -44,11 +43,15 @@ def repl(emulator):
 
         emulator.interpret(line)
 
+    emulator.free_vm()
 
-def run_file(emulator, path, debug_level=0):
+
+def run_file(path, debug_level=0):
     #
     """
     """
+    emulator = vm.VM()
+
     with open(path, "r") as f:
         source = f.read()
 
@@ -60,18 +63,22 @@ def run_file(emulator, path, debug_level=0):
     elif result == vm.InterpretResult.INTERPRET_RUNTIME_ERROR:
         exit_with_code(70)
 
+    emulator.free_vm()
 
-def interpret(emulator, source, target):
+
+def interpret(source, expected):
     #
     """
     """
-    emulator.free_vm()
+    emulator = vm.VM()
     result = emulator.interpret(source, 0, False)
+    actual = "".join(emulator.result.value_as.chars)[:-1]
+    emulator.free_vm()
 
-    return result, "".join(emulator.result.value_as.chars)[:-1] == target
+    return result, actual == expected
 
 
-def run_custom(emulator):
+def run_custom():
     #
     """
     """
@@ -82,7 +89,7 @@ breakfast = "beignets with " + beverage;
 
 print breakfast;"""
 
-    assert interpret(emulator, source, "beignets with cafe au lait")[1]
+    assert interpret(source, "beignets with cafe au lait")[1]
 
     source = """\
 {
@@ -96,7 +103,7 @@ print breakfast;"""
     }
 }"""
 
-    assert interpret(emulator, source, "beignets with cafe au lait")[1]
+    assert interpret(source, "beignets with cafe au lait")[1]
 
     source = """\
 {
@@ -112,7 +119,7 @@ print breakfast;"""
     print beverage;
 }"""
 
-    result, assertion = interpret(emulator, source, "beignets with cafe au lait")
+    result, assertion = interpret(source, "beignets with cafe au lait")
     assert assertion
     assert result == vm.InterpretResult.INTERPRET_RUNTIME_ERROR
 
@@ -130,7 +137,7 @@ print breakfast;"""
     print beverage;
 }"""
 
-    result, assertion = interpret(emulator, source, "beignets with cafe au lait")
+    result, assertion = interpret(source, "beignets with cafe au lait")
     assert assertion
     assert result == vm.InterpretResult.INTERPRET_RUNTIME_ERROR
 
@@ -144,7 +151,7 @@ if (false or true) {
     print beverage;
 }"""
 
-    assert interpret(emulator, source, "beignets")[1]
+    assert interpret(source, "beignets")[1]
 
     source = """\
 let breakfast = "beignets";
@@ -156,7 +163,7 @@ if (false and true) {
     print beverage;
 }"""
 
-    assert interpret(emulator, source, "cafe au lait")[1]
+    assert interpret(source, "cafe au lait")[1]
 
     source = """\
 let breakfast = "beignets";
@@ -169,7 +176,7 @@ while (counter < 2) {
 
 print breakfast;"""
 
-    assert interpret(emulator, source, "beignets and beignets and beignets")[1]
+    assert interpret(source, "beignets and beignets and beignets")[1]
 
     source = """\
 let breakfast = "beignets";
@@ -180,7 +187,7 @@ for (let counter = 0; counter < 2; counter = counter + 1) {
 
 print breakfast;"""
 
-    assert interpret(emulator, source, "beignets and beignets and beignets")[1]
+    assert interpret(source, "beignets and beignets and beignets")[1]
 
 
 if __name__ == "__main__":

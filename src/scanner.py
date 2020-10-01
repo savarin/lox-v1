@@ -52,7 +52,7 @@ class TokenType(Enum):
 
 
 class Token():
-    def __init__(self, token_type, start, length, source, line):
+    def __init__(self, token_type=None, start=0, length=0, source=None, line=0):
         # type: (TokenType, int, int, int) -> None
         """
         """

@@ -49,7 +49,7 @@ def allocate_object(size, object_type):
 class ObjectFunction():
     def __init__(self, obj):
         #
-        """Initialize function version of Object
+        """Initialize function version of Object.
 
         Not implement free_object for the moment due to dependency on chunk.py.
         """
@@ -218,6 +218,10 @@ class Value():
         """
         """
         assert self.is_function()
+
+        if self.value_as.name is None:
+            return "<script>"
+
         return "<fn {}>".format(self.value_as.name.chars)
 
     def as_string(self):

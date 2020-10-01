@@ -86,7 +86,7 @@ class Local():
         #
         """
         """
-        self.name = None  # type: scanner.TokenType
+        self.name = scanner.Token()
         self.depth = 0
 
 
@@ -100,11 +100,20 @@ class Compiler():
         #
         """
         """
-        self.function = value.new_function()
+        self.function = None
         self.function_type = function_type
         self.locals = [Local() for _ in range(UINT8_COUNT)]  # type: List[Local]
         self.local_count = 0
         self.scope_depth = 0
+
+        # Initialization of bytecode to avoid circular dependency
+        self.function = value.new_function()
+        self.function.bytecode = chunk.Chunk()
+
+        self.local = self.locals[self.local_count]
+        self.local_count += 1
+        self.local.name.start = ""
+        self.local.name.length = 0
 
 
 class Parser():
@@ -125,7 +134,7 @@ class Parser():
         #
         """
         """
-        return self.current.function.bytecode
+        return self.composer.function.bytecode
 
     def error_at(self, token, message):
         #
@@ -283,9 +292,14 @@ class Parser():
         """
         """
         self.emit_return()
+        function = self.composer.function
 
         if self.debug_level >= 1 and not self.had_error:
-            debug.disassemble_chunk(self.current_chunk(), "code")
+            function_name = function.name or "<script>"
+
+            debug.disassemble_chunk(self.current_chunk(), function_name)
+
+        return function
 
     def begin_scope(self):
         #
@@ -795,10 +809,10 @@ class Parser():
 
 
 def compile(source, bytecode, debug_level):
-    # type: (str, chunk.Chunk, bool) -> None
+    # type: (str, chunk.Chunk, bool) -> value.ObjectFunction
     """KIV change this to Compiler class with method compile."""
     reader = scanner.Scanner(source)
-    composer = Compiler()
+    composer = Compiler(FunctionType.TYPE_SCRIPT)
 
     parser = Parser(
         reader=reader,
@@ -815,5 +829,9 @@ def compile(source, bytecode, debug_level):
     while not parser.match(scanner.TokenType.TOKEN_EOF):
         parser.declaration()
 
-    parser.end_compiler()
-    return not parser.had_error
+    function = parser.end_compiler()
+
+    if parser.had_error:
+        return None
+
+    return function

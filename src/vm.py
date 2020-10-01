@@ -6,7 +6,18 @@ import memory
 import table
 import value
 
-STACK_MAX = 16
+FRAMES_MAX = 64
+STACK_MAX = FRAMES_MAX * compiler.UINT8_COUNT
+
+
+class CallFrame():
+    def __init__(self):
+        #
+        """
+        """
+        self.function = None  # type: value.ObjectFunction
+        self.ip = 0  # type: int
+        self.slots = None  # type: List[value.Value]
 
 
 class InterpretResult(Enum):
@@ -20,10 +31,10 @@ class VM():
         #
         """
         """
-        self.bytecode = None
-        self.ip = 0
+        self.frames = [CallFrame() for _ in range(FRAMES_MAX)]  # type: List[CallFrame]
         self.stack = [None] * STACK_MAX
         self.stack_top = 0
+        self.frame_count = 0
         self.globals = table.Table()
 
         # Custom attribute for testing
@@ -47,8 +58,11 @@ class VM():
         """
         """
         if self.expose:
+            call_frame = self.frames[self.frame_count - 1]
+            line = call_frame.function.bytecode.lines[call_frame.ip]
+
             print(messages if isinstance(messages, str) else " ".join(messages))
-            print("[line {} in script]".format(self.bytecode.lines[self.ip]))
+            print("[line {} in script]".format(line))
 
         self.reset_stack()
 
@@ -102,32 +116,40 @@ class VM():
         bytecode = chunk.Chunk()
         self.expose = expose
 
-        if not compiler.compile(source, bytecode, debug_level):
-            bytecode.free_chunk()
+        function = compiler.compile(source, bytecode, debug_level)
+
+        if function is None:
             return InterpretResult.INTERPRET_COMPILE_ERROR
 
-        self.bytecode = bytecode
-        self.ip = 0  # book refers to pointer of bytecode.code
+        self.push(value.obj_val(function))
 
-        result = self.run()
+        frame = self.frames[self.frame_count]
+        self.frame_count += 1
 
-        self.bytecode.free_chunk()
-        return result
+        frame.function = function
+        frame.function.bytecode.code = function.bytecode.code
+        frame.ip = 0
+        frame.slots = self.stack
+
+        return self.run()
 
     def run(self):
         #
         """
         """
-        def read_byte():
-            self.ip += 1
-            return self.bytecode.code[self.ip - 1]
+        frame = self.frames[self.frame_count - 1]
+        bytecode = frame.function.bytecode
 
-        def read_constant():
-            return self.bytecode.constants.values[read_byte()]
+        def read_byte():
+            frame.ip += 1
+            return bytecode.code[frame.ip - 1]
 
         def read_short():
-            self.ip += 2
-            return self.bytecode.code[self.ip - 2] << 8 or self.bytecode.code[self.ip - 1]
+            frame.ip += 2
+            return bytecode.code[frame.ip - 2] << 8 or bytecode.code[frame.ip - 1]
+
+        def read_constant():
+            return bytecode.constants.values[read_byte()]
 
         def read_string():
             return read_constant().as_string()
@@ -163,11 +185,11 @@ class VM():
 
             elif instruction == chunk.OpCode.OP_GET_LOCAL:
                 slot = read_byte()
-                self.push(self.stack[slot])
+                self.push(frame.slots[slot])
 
             elif instruction == chunk.OpCode.OP_SET_LOCAL:
                 slot = read_byte()
-                self.stack[slot] = self.peek(0)
+                frame.slots[slot] = self.peek(0)
 
             elif instruction == chunk.OpCode.OP_GET_GLOBAL:
                 name = read_string()
@@ -186,7 +208,6 @@ class VM():
                 self.pop()
 
             elif instruction == chunk.OpCode.OP_SET_GLOBAL:
-                # TODO: Resolve set global
                 name = read_string()
 
                 if self.globals.table_set(name, self.peek(0)):
@@ -243,17 +264,17 @@ class VM():
 
             elif instruction == chunk.OpCode.OP_JUMP:
                 offset = read_short()
-                self.ip += offset
+                frame.ip += offset
 
             elif instruction == chunk.OpCode.OP_JUMP_IF_FALSE:
                 offset = read_short()
 
                 if self.is_falsey(self.peek(0)):
-                    self.ip += offset
+                    frame.ip += offset
 
             elif instruction == chunk.OpCode.OP_LOOP:
                 offset = read_short()
-                self.ip -= offset
+                frame.ip -= offset
 
             elif instruction == chunk.OpCode.OP_RETURN:
                 return InterpretResult.INTERPRET_OK
