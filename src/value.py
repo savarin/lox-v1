@@ -9,6 +9,7 @@ FNV_32_SIZE = 2**32
 
 
 class ObjectType(Enum):
+    OBJ_FUNCTION = "OBJ_FUNCTION"
     OBJ_STRING = "OBJ_STRING"
 
 
@@ -24,9 +25,14 @@ class Object():
         """Checks if Object type matches argument."""
         return self.object_type == object_type
 
+    def is_function(self):
+        # type: () -> bool
+        """Checks if Object version is a function."""
+        return self.is_object_type(ObjectType.OBJ_FUNCTION)
+
     def is_string(self):
         # type: () -> bool
-        """Checks if Object version is string."""
+        """Checks if Object version is a string."""
         return self.is_object_type(ObjectType.OBJ_STRING)
 
 
@@ -40,10 +46,35 @@ def allocate_object(size, object_type):
     )
 
 
+class ObjectFunction():
+    def __init__(self, obj):
+        #
+        """Initialize function version of Object
+
+        Not implement free_object for the moment due to dependency on chunk.py.
+        """
+        self.obj = obj
+        self.arity = 0
+        self.bytecode = None
+        self.name = None  # type: ObjectString
+
+
+def new_function(length=8):
+    #
+    """
+    """
+    obj = allocate_object(length, ObjectType.OBJ_FUNCTION)
+
+    return ObjectFunction(obj)
+
+
 class ObjectString():
     def __init__(self, obj):
         # type: (Object) -> None
-        """Initialize string version of Object."""
+        """Initialize string version of Object.
+
+        Not implement free_object for the moment due to dependency on chunk.py.
+        """
         self.obj = obj
         self.length = 0
         self.chars = obj.obj
@@ -149,6 +180,12 @@ class Value():
         """Check if Value is an Object."""
         return self.value_type == ValueType.VAL_OBJ
 
+    def is_function(self):
+        #
+        """
+        """
+        return self.is_obj() and self.value_as.obj.is_function()
+
     def is_string(self):
         #
         """
@@ -176,6 +213,13 @@ class Value():
         assert self.is_obj()
         return self.value_as
 
+    def as_function(self):
+        #
+        """
+        """
+        assert self.is_function()
+        return "<fn {}>".format(self.value_as.name.chars)
+
     def as_string(self):
         # type: () -> ObjectString
         """Unwraps Value to return ObjectString."""
@@ -192,7 +236,10 @@ class Value():
         #
         """
         """
-        if self.is_string():
+        if self.is_function():
+            print(self.as_function())
+
+        elif self.is_string():
             print(self.as_cstring())
 
     def print_value(self):

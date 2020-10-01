@@ -90,11 +90,18 @@ class Local():
         self.depth = 0
 
 
+class FunctionType(Enum):
+    TYPE_FUNCTION = "TYPE_FUNCTION"
+    TYPE_SCRIPT = "TYPE_SCRIPT"
+
+
 class Compiler():
-    def __init__(self):
+    def __init__(self, function_type):
         #
         """
         """
+        self.function = value.new_function()
+        self.function_type = function_type
         self.locals = [Local() for _ in range(UINT8_COUNT)]  # type: List[Local]
         self.local_count = 0
         self.scope_depth = 0
@@ -118,7 +125,7 @@ class Parser():
         #
         """
         """
-        return self.bytecode
+        return self.current.function.bytecode
 
     def error_at(self, token, message):
         #
