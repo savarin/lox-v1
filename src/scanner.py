@@ -200,8 +200,8 @@ class Scanner():
         """
         index = self.start + start
 
-        if (self.current - self.start == start + length) and (self.source[index:index + length]
-                                                              == rest):
+        if ((self.current - self.start == start + length)
+                and (self.source[index:index + length] == rest)):
             return token_type
 
         return TokenType.TOKEN_IDENTIFIER
