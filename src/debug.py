@@ -125,8 +125,10 @@ def convert_value(val):
     """
     """
     if isinstance(val, value.Value):
-        if val.is_string():
-            return "".join(val.as_cstring()[:-1])
+        if val.is_function():
+            return "".join(val.as_function())
+        elif val.is_string():
+            return "".join(val.as_cstring())
 
         return val.value_as
 

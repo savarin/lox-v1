@@ -96,10 +96,11 @@ class FunctionType(Enum):
 
 
 class Compiler():
-    def __init__(self, function_type):
+    def __init__(self, function_type, enclosing=None):
         #
         """
         """
+        self.enclosing = enclosing
         self.function = None
         self.function_type = function_type
         self.locals = [Local() for _ in range(UINT8_COUNT)]  # type: List[Local]
@@ -123,6 +124,7 @@ class Parser():
         """
         self.reader = reader
         self.composer = composer
+        self.enclosing = composer
         self.bytecode = bytecode  # referred to in text as compiling_chunk
         self.current = None  # type: scanner.Token
         self.previous = None  # type: scanner.Token
@@ -568,6 +570,9 @@ class Parser():
         #
         """
         """
+        if self.composer.scope_depth == 0:
+            return None
+
         local_count = self.composer.local_count - 1
         self.composer.locals[local_count].depth = self.composer.scope_depth
 
@@ -636,6 +641,51 @@ class Parser():
             self.declaration()
 
         self.consume(scanner.TokenType.TOKEN_RIGHT_BRACE, "Expect '}' after block.")
+
+    def function(self, function_type):
+        #
+        """
+        """
+        composer = Compiler(function_type, self.enclosing)
+
+        if function_type != FunctionType.TYPE_SCRIPT:
+            composer.function.name = value.copy_string(self.previous.source, self.previous.length)
+
+        self.enclosing = composer
+        self.begin_scope()
+
+        # Compile the parameter list.
+        self.consume(scanner.TokenType.TOKEN_LEFT_PAREN, "Expect '(' after function name.")
+
+        if not self.check(scanner.TokenType.TOKEN_RIGHT_PAREN):
+            while self.match(scanner.TokenType.TOKEN_COMMA):
+                self.composer.function.arity += 1
+
+                if self.composer.function.arity > 255:
+                    self.error_at_current("Cannot have more than 255 parameters.")
+
+                param_constant = self.parse_variable("Expect parameter name.")
+                self.define_variable(param_constant)
+
+        self.consume(scanner.TokenType.TOKEN_RIGHT_PAREN, "Expect ')' after function name.")
+
+        # The body
+        self.consume(scanner.TokenType.TOKEN_LEFT_BRACE, "Expect '{' before function body.")
+        self.block()
+
+        # Create the function object.
+        function = self.end_compiler()
+        self.emit_bytes(chunk.OpCode.OP_CONSTANT, self.make_constant(value.obj_val(function)))
+
+    def fun_declaration(self):
+        #
+        """
+        """
+        global_fun = self.parse_variable("Expect function name.")
+
+        self.mark_initialized()
+        self.function(FunctionType.TYPE_FUNCTION)
+        self.define_variable(global_fun)
 
     def var_declaration(self):
         #
@@ -780,7 +830,9 @@ class Parser():
         #
         """
         """
-        if self.match(scanner.TokenType.TOKEN_VAR):
+        if self.match(scanner.TokenType.TOKEN_FUN):
+            self.fun_declaration()
+        elif self.match(scanner.TokenType.TOKEN_VAR):
             self.var_declaration()
         else:
             self.statement()
@@ -812,7 +864,7 @@ def compile(source, bytecode, debug_level):
     # type: (str, chunk.Chunk, bool) -> value.ObjectFunction
     """KIV change this to Compiler class with method compile."""
     reader = scanner.Scanner(source)
-    composer = Compiler(FunctionType.TYPE_SCRIPT)
+    composer = Compiler(FunctionType.TYPE_SCRIPT, None)
 
     parser = Parser(
         reader=reader,

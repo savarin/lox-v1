@@ -72,7 +72,7 @@ def interpret(source, expected):
     """
     emulator = vm.VM()
     result = emulator.interpret(source, 0, False)
-    actual = "".join(emulator.result.value_as.chars)[:-1]
+    actual = "".join(emulator.result.value_as.chars).rstrip("\0")
     emulator.free_vm()
 
     return result, actual == expected
