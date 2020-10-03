@@ -41,12 +41,6 @@ class VM():
         self.result = None
         self.expose = True
 
-    def free_vm(self):
-        #
-        """
-        """
-        self.globals.free_table()
-
     def reset_stack(self):
         #
         """
@@ -65,6 +59,12 @@ class VM():
             print("[line {} in script]".format(line))
 
         self.reset_stack()
+
+    def free_vm(self):
+        #
+        """
+        """
+        self.globals.free_table()
 
     def push(self, value):
         #
@@ -108,30 +108,6 @@ class VM():
 
         result = value.take_string(chars, length)
         self.push(value.obj_val(result))
-
-    def interpret(self, source, debug_level=0, expose=True):
-        # type: (str, int, bool) -> InterpretResult
-        """
-        """
-        bytecode = chunk.Chunk()
-        self.expose = expose
-
-        function = compiler.compile(source, bytecode, debug_level)
-
-        if function is None:
-            return InterpretResult.INTERPRET_COMPILE_ERROR
-
-        self.push(value.obj_val(function))
-
-        frame = self.frames[self.frame_count]
-        self.frame_count += 1
-
-        frame.function = function
-        frame.function.bytecode.code = function.bytecode.code
-        frame.ip = 0
-        frame.slots = self.stack
-
-        return self.run()
 
     def run(self):
         #
@@ -278,3 +254,27 @@ class VM():
 
             elif instruction == chunk.OpCode.OP_RETURN:
                 return InterpretResult.INTERPRET_OK
+
+    def interpret(self, source, debug_level=0, expose=True):
+        # type: (str, int, bool) -> InterpretResult
+        """
+        """
+        bytecode = chunk.Chunk()
+        self.expose = expose
+
+        function = compiler.compile(source, bytecode, debug_level)
+
+        if function is None:
+            return InterpretResult.INTERPRET_COMPILE_ERROR
+
+        self.push(value.obj_val(function))
+
+        frame = self.frames[self.frame_count]
+        self.frame_count += 1
+
+        frame.function = function
+        frame.function.bytecode.code = function.bytecode.code
+        frame.ip = 0
+        frame.slots = self.stack
+
+        return self.run()

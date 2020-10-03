@@ -14,6 +14,46 @@ def disassemble_chunk(bytecode, name):
         offset = disassemble_instruction(bytecode, offset)
 
 
+def constant_instruction(name, bytecode, offset):
+    #
+    """
+    """
+    constant = bytecode.code[offset + 1]
+    val = convert_value(bytecode.constants.values[constant])
+
+    print("{:16s} {:4d} '{}'".format(name, constant, val))
+    return offset + 2
+
+
+def simple_instruction(name, offset):
+    #
+    """
+    """
+    print("{}".format(name))
+    return offset + 1
+
+
+def byte_instruction(name, bytecode, offset):
+    #
+    """
+    """
+    slot = bytecode.code[offset + 1]
+
+    print("{:16s} {:4d}".format(name, slot))
+    return offset + 2
+
+
+def jump_instruction(name, sign, bytecode, offset):
+    #
+    """
+    """
+    jump = bytecode.code[offset + 1] << 8
+    jump = jump | bytecode.code[offset + 2]
+
+    print("{:16s} {:4d} -> {}".format(name, offset, offset + 3 + sign * jump))
+    return offset + 3
+
+
 def disassemble_instruction(bytecode, offset):
     #
     """
@@ -80,53 +120,13 @@ def disassemble_instruction(bytecode, offset):
     return offset + 1
 
 
-def simple_instruction(name, offset):
-    #
-    """
-    """
-    print("{}".format(name))
-    return offset + 1
-
-
-def byte_instruction(name, bytecode, offset):
-    #
-    """
-    """
-    slot = bytecode.code[offset + 1]
-
-    print("{:16s} {:4d}".format(name, slot))
-    return offset + 2
-
-
-def jump_instruction(name, sign, bytecode, offset):
-    #
-    """
-    """
-    jump = bytecode.code[offset + 1] << 8
-    jump = jump | bytecode.code[offset + 2]
-
-    print("{:16s} {:4d} -> {}".format(name, offset, offset + 3 + sign * jump))
-    return offset + 3
-
-
-def constant_instruction(name, bytecode, offset):
-    #
-    """
-    """
-    constant = bytecode.code[offset + 1]
-    val = convert_value(bytecode.constants.values[constant])
-
-    print("{:16s} {:4d} '{}'".format(name, constant, val))
-    return offset + 2
-
-
 def convert_value(val):
     #
     """
     """
     if isinstance(val, value.Value):
         if val.is_function():
-            return "".join(val.as_function())
+            return "".join(val.as_function_name())
         elif val.is_string():
             return "".join(val.as_cstring())
 

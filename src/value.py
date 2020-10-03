@@ -83,31 +83,6 @@ class ObjectString():
         self.obj.obj = None
 
 
-def take_string(chars, length):
-    # type: (List[str], int) -> ObjectString
-    """Applies for concatenation. Takes ownership of characters passed as
-    argument, since no need for copy of characters on the heap.
-    """
-    hash_value = hash_string(chars, length)
-
-    return allocate_string(chars, length, hash_value)
-
-
-def copy_string(chars, length):
-    # type: (str, int) -> ObjectString
-    """Copies existing string and calls allocate_string. Assumes ownership of
-    characters passed as argument cannot be taken away, so creates a copy. This
-    is desired as characters may be in the middle of the source string"""
-    heap_chars = memory.allocate(length + 1)
-
-    heap_chars[:length] = chars[:length]
-    heap_chars[length] = "\0"
-
-    hash_value = hash_string(heap_chars, length)
-
-    return allocate_string(heap_chars, length, hash_value)
-
-
 def allocate_string(chars, length, hash_value):
     # type: (List[str], int, Any) -> ObjectString
     """Creates ObjectString from Object and copies chars. Note length represents
@@ -137,6 +112,31 @@ def hash_string(chars, length):
         hash_int = (hash_int * FNV_32_PRIME) % FNV_32_SIZE
 
     return hash_int
+
+
+def take_string(chars, length):
+    # type: (List[str], int) -> ObjectString
+    """Applies for concatenation. Takes ownership of characters passed as
+    argument, since no need for copy of characters on the heap.
+    """
+    hash_value = hash_string(chars, length)
+
+    return allocate_string(chars, length, hash_value)
+
+
+def copy_string(chars, length):
+    # type: (str, int) -> ObjectString
+    """Copies existing string and calls allocate_string. Assumes ownership of
+    characters passed as argument cannot be taken away, so creates a copy. This
+    is desired as characters may be in the middle of the source string"""
+    heap_chars = memory.allocate(length + 1)
+
+    heap_chars[:length] = chars[:length]
+    heap_chars[length] = "\0"
+
+    hash_value = hash_string(heap_chars, length)
+
+    return allocate_string(heap_chars, length, hash_value)
 
 
 class ValueType(Enum):
@@ -218,17 +218,31 @@ class Value():
         """
         """
         assert self.is_function()
-
-        if self.value_as.name is None:
-            return "<script>"
-
-        return "<fn {}>".format(self.value_as.name.chars)
+        return self.value_as
 
     def as_string(self):
         # type: () -> ObjectString
         """Unwraps Value to return ObjectString."""
         assert self.is_string()
         return self.value_as
+
+    def as_obj_type(self):
+        #
+        """
+        """
+        assert self.is_obj()
+        return self.value_as.obj.object_type
+
+    def as_function_name(self):
+        #
+        """
+        """
+        assert self.is_function()
+
+        if self.value_as.name is None:
+            return "<script>"
+
+        return "<fn {}>".format(self.value_as.name.chars)
 
     def as_cstring(self):
         # type: () -> str
@@ -280,13 +294,6 @@ class Value():
                     and self_string.chars == other_string.chars)
 
         return False
-
-    def obj_type(self):
-        #
-        """
-        """
-        assert self.is_obj()
-        return self.value_as.obj.object_type
 
 
 def bool_val(val):

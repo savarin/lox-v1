@@ -199,6 +199,12 @@ class Parser():
 
         self.error_at_current(message)
 
+    def check(self, token_type):
+        #
+        """
+        """
+        return self.current.token_type == token_type
+
     def match(self, token_type):
         #
         """
@@ -208,12 +214,6 @@ class Parser():
 
         self.advance()
         return True
-
-    def check(self, token_type):
-        #
-        """
-        """
-        return self.current.token_type == token_type
 
     def emit_byte(self, byte):
         #
@@ -320,6 +320,132 @@ class Parser():
                self.composer.scope_depth):
             self.emit_byte(chunk.OpCode.OP_POP)
             self.composer.local_count -= 1
+
+    def identifier_constant(self, name):
+        #
+        """
+        """
+        chars = name.source[:name.length]
+        obj_val = value.obj_val(value.copy_string(chars, name.length))
+        return self.make_constant(obj_val)
+
+    @staticmethod
+    def identifiers_equal(a, b):
+        #
+        """
+        """
+        if not a or not b or a.length != b.length:
+            return False
+
+        return a.source == b.source
+
+    def resolve_local(self, name):
+        #
+        """
+        """
+        if self.debug_level >= 3:
+            print("  {}".format(sys._getframe().f_code.co_name))
+
+        for i in range(self.composer.local_count - 1, -1, -1):
+            local = self.composer.locals[i]
+
+            if self.identifiers_equal(name, local.name):
+                if local.depth == -1:
+                    self.error("Cannot read local variable in its own initializer.")
+
+                return i
+
+        return -1
+
+    def add_local(self, name):
+        #
+        """
+        """
+        if self.debug_level >= 3:
+            print("  {}".format(sys._getframe().f_code.co_name))
+
+        if self.composer.local_count == UINT8_COUNT:
+            self.error("Too many local variables in function.")
+            return None
+
+        local = self.composer.locals[self.composer.local_count]
+        self.composer.local_count += 1
+
+        local.name = name
+        local.depth = -1
+
+    def declare_variable(self):
+        #
+        """
+        """
+        if self.debug_level >= 3:
+            print("  {}".format(sys._getframe().f_code.co_name))
+
+        # Global variables are implicitly declared
+        if self.composer.scope_depth == 0:
+            return None
+
+        name = self.previous
+
+        for i in range(self.composer.local_count - 1, -1, -1):
+            local = self.composer.locals[i]
+
+            if local.depth != -1 and local.depth < self.composer.scope_depth:
+                break
+
+            if self.identifiers_equal(name, local.name):
+                self.error("Variable with this name already declared in this scope.")
+
+        self.add_local(name)
+
+    def parse_variable(self, error_message):
+        #
+        """
+        """
+        if self.debug_level >= 3:
+            print("  {}".format(sys._getframe().f_code.co_name))
+
+        self.consume(scanner.TokenType.TOKEN_IDENTIFIER, error_message)
+        self.declare_variable()
+
+        if self.composer.scope_depth > 0:
+            return 0
+
+        return self.identifier_constant(self.previous)
+
+    def mark_initialized(self):
+        #
+        """
+        """
+        if self.composer.scope_depth == 0:
+            return None
+
+        local_count = self.composer.local_count - 1
+        self.composer.locals[local_count].depth = self.composer.scope_depth
+
+    def define_variable(self, global_var):
+        #
+        """
+        """
+        if self.debug_level >= 3:
+            print("  {}".format(sys._getframe().f_code.co_name))
+
+        if self.composer.scope_depth > 0:
+            self.mark_initialized()
+            return None
+
+        self.emit_bytes(chunk.OpCode.OP_DEFINE_GLOBAL, global_var)
+
+    def and_op(self, can_assign):
+        #
+        """
+        """
+        end_jump = self.emit_jump(chunk.OpCode.OP_JUMP_IF_FALSE)
+
+        self.emit_byte(chunk.OpCode.OP_POP)
+        self.parse_precedence(Precedence.PREC_AND)
+
+        self.patch_jump(end_jump)
 
     def binary(self, can_assign):
         #
@@ -473,132 +599,6 @@ class Parser():
         # Error if '=' not consumed as part of expression
         if can_assign and self.match(scanner.TokenType.TOKEN_EQUAL):
             self.error("Invalid assignment target.")
-
-    def identifier_constant(self, name):
-        #
-        """
-        """
-        chars = name.source[:name.length]
-        obj_val = value.obj_val(value.copy_string(chars, name.length))
-        return self.make_constant(obj_val)
-
-    @staticmethod
-    def identifiers_equal(a, b):
-        #
-        """
-        """
-        if not a or not b or a.length != b.length:
-            return False
-
-        return a.source == b.source
-
-    def resolve_local(self, name):
-        #
-        """
-        """
-        if self.debug_level >= 3:
-            print("  {}".format(sys._getframe().f_code.co_name))
-
-        for i in range(self.composer.local_count - 1, -1, -1):
-            local = self.composer.locals[i]
-
-            if self.identifiers_equal(name, local.name):
-                if local.depth == -1:
-                    self.error("Cannot read local variable in its own initializer.")
-
-                return i
-
-        return -1
-
-    def add_local(self, name):
-        #
-        """
-        """
-        if self.debug_level >= 3:
-            print("  {}".format(sys._getframe().f_code.co_name))
-
-        if self.composer.local_count == UINT8_COUNT:
-            self.error("Too many local variables in function.")
-            return None
-
-        local = self.composer.locals[self.composer.local_count]
-        self.composer.local_count += 1
-
-        local.name = name
-        local.depth = -1
-
-    def declare_variable(self):
-        #
-        """
-        """
-        if self.debug_level >= 3:
-            print("  {}".format(sys._getframe().f_code.co_name))
-
-        # Global variables are implicitly declared
-        if self.composer.scope_depth == 0:
-            return None
-
-        name = self.previous
-
-        for i in range(self.composer.local_count - 1, -1, -1):
-            local = self.composer.locals[i]
-
-            if local.depth != -1 and local.depth < self.composer.scope_depth:
-                break
-
-            if self.identifiers_equal(name, local.name):
-                self.error("Variable with this name already declared in this scope.")
-
-        self.add_local(name)
-
-    def parse_variable(self, error_message):
-        #
-        """
-        """
-        if self.debug_level >= 3:
-            print("  {}".format(sys._getframe().f_code.co_name))
-
-        self.consume(scanner.TokenType.TOKEN_IDENTIFIER, error_message)
-        self.declare_variable()
-
-        if self.composer.scope_depth > 0:
-            return 0
-
-        return self.identifier_constant(self.previous)
-
-    def mark_initialized(self):
-        #
-        """
-        """
-        if self.composer.scope_depth == 0:
-            return None
-
-        local_count = self.composer.local_count - 1
-        self.composer.locals[local_count].depth = self.composer.scope_depth
-
-    def define_variable(self, global_var):
-        #
-        """
-        """
-        if self.debug_level >= 3:
-            print("  {}".format(sys._getframe().f_code.co_name))
-
-        if self.composer.scope_depth > 0:
-            self.mark_initialized()
-            return None
-
-        self.emit_bytes(chunk.OpCode.OP_DEFINE_GLOBAL, global_var)
-
-    def and_op(self, can_assign):
-        #
-        """
-        """
-        end_jump = self.emit_jump(chunk.OpCode.OP_JUMP_IF_FALSE)
-
-        self.emit_byte(chunk.OpCode.OP_POP)
-        self.parse_precedence(Precedence.PREC_AND)
-
-        self.patch_jump(end_jump)
 
     def get_rule(self, token_type):
         # type: (TokenType) -> ParseRule

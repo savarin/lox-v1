@@ -42,6 +42,16 @@ class Chunk():
         self.lines = None
         self.constants = value.ValueArray()
 
+    def free_chunk(self):
+        #
+        """
+        """
+        self.code = memory.free_array(self.code, self.capacity)
+        self.lines = memory.free_array(self.lines, self.capacity)
+        self.constants.free_value_array()
+        self.count = 0
+        self.capacity = 0
+
     def write_chunk(self, byte, line):
         #
         """
@@ -63,16 +73,6 @@ class Chunk():
         self.code[self.count] = byte
         self.lines[self.count] = line
         self.count += 1
-
-    def free_chunk(self):
-        #
-        """
-        """
-        self.code = memory.free_array(self.code, self.capacity)
-        self.lines = memory.free_array(self.lines, self.capacity)
-        self.constants.free_value_array()
-        self.count = 0
-        self.capacity = 0
 
     def add_constant(self, value):
         #
