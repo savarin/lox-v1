@@ -301,6 +301,7 @@ class Parser():
             function_name = function.name or "<script>"
             debug.disassemble_chunk(self.current_chunk(), function_name)
 
+        self.composer = self.enclosing
         return function
 
     def begin_scope(self):
@@ -442,7 +443,7 @@ class Parser():
         """
         arg_count = 0
 
-        if not self.check(scanner.TokenType(TOKEN_RIGHT_PAREN)):
+        if not self.check(scanner.TokenType.TOKEN_RIGHT_PAREN):
             while True:
                 self.expression()
 
@@ -451,7 +452,7 @@ class Parser():
 
                 arg_count += 1
 
-                if not self.match(scanner.TokenType(TOKEN_COMMA)):
+                if not self.match(scanner.TokenType.TOKEN_COMMA):
                     break
 
         self.consume(scanner.TokenType.TOKEN_RIGHT_PAREN, "Expect ')' after arguments.")
@@ -503,7 +504,7 @@ class Parser():
         elif operator_type == scanner.TokenType.TOKEN_SLASH:
             self.emit_byte(chunk.OpCode.OP_DIVIDE)
 
-    def call(can_assign):
+    def call(self, can_assign):
         # type: (bool) -> None
         """
         """
@@ -637,6 +638,7 @@ class Parser():
         type_map = {
             "and_op": self.and_op,
             "binary": self.binary,
+            "call": self.call,
             "grouping": self.grouping,
             "literal": self.literal,
             "number": self.number,
@@ -826,7 +828,7 @@ class Parser():
         #
         """
         """
-        if self.composer.function_type == FunctionType.TYPE_SCRIPT:
+        if self.enclosing.function_type == FunctionType.TYPE_SCRIPT:
             self.error("Cannot return from top-level code.")
 
         if self.match(scanner.TokenType.TOKEN_SEMICOLON):
@@ -896,7 +898,7 @@ class Parser():
         elif self.match(scanner.TokenType.TOKEN_IF):
             self.if_statement()
         elif self.match(scanner.TokenType.TOKEN_RETURN):
-            self.return_statemen()
+            self.return_statement()
         elif self.match(scanner.TokenType.TOKEN_WHILE):
             self.while_statement()
         elif self.match(scanner.TokenType.TOKEN_LEFT_BRACE):

@@ -10,6 +10,7 @@ FNV_32_SIZE = 2**32
 
 class ObjectType(Enum):
     OBJ_FUNCTION = "OBJ_FUNCTION"
+    OBJ_NATIVE = "OBJ_NATIVE"
     OBJ_STRING = "OBJ_STRING"
 
 
@@ -29,6 +30,11 @@ class Object():
         # type: () -> bool
         """Checks if Object version is a function."""
         return self.is_object_type(ObjectType.OBJ_FUNCTION)
+
+    def is_native(self):
+        # type: () -> bool
+        """Checks if Object version is a native function."""
+        return self.is_object_type(ObjectType.OBJ_NATIVE)
 
     def is_string(self):
         # type: () -> bool
@@ -66,6 +72,23 @@ def new_function(length=8):
     obj = allocate_object(length, ObjectType.OBJ_FUNCTION)
 
     return ObjectFunction(obj)
+
+
+class ObjectNative():
+    def __init__(self, obj, function):
+        #
+        """
+        """
+        self.obj = obj
+        self.function = function
+
+def new_native(function, length=8):
+    #
+    """
+    """
+    obj = allocate_object(length, ObjectType.OBJ_NATIVE)
+
+    return ObjectNative(obj, function)
 
 
 class ObjectString():
@@ -186,6 +209,12 @@ class Value():
         """
         return self.is_obj() and self.value_as.obj.is_function()
 
+    def is_native(self):
+        #
+        """
+        """
+        return self.is_obj() and self.value_as.obj.is_native()
+
     def is_string(self):
         #
         """
@@ -218,6 +247,13 @@ class Value():
         """
         """
         assert self.is_function()
+        return self.value_as
+
+    def as_native(self):
+        #
+        """
+        """
+        assert self.is_native()
         return self.value_as
 
     def as_string(self):
@@ -256,6 +292,9 @@ class Value():
         """
         if self.is_function():
             print(self.as_function())
+
+        elif self.is_native():
+            print("<native fn>")
 
         elif self.is_string():
             print(self.as_cstring())

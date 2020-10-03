@@ -61,6 +61,17 @@ class VM():
 
         self.reset_stack()
 
+    def define_native(name, function):
+        #
+        """
+        """
+        self.push(value.obj_val(value.copy_string(name, len(name))))
+        self.push(value.obj_val(value.new_native(function)))
+
+        self.globals.table_set(self.stack[0].as_string(), self.stack[1])
+        self.pop()
+        self.pop()
+
     def free_vm(self):
         #
         """
@@ -110,15 +121,17 @@ class VM():
             if callee.as_obj_type() == value.ObjectType.OBJ_FUNCTION:
                 return self.call(callee.as_function(), arg_count)
 
+            elif callee.as_obj_type() == value.ObjectType.OBJ_NATIVE:
+                native = callee.as_native()
+
+                result = native(arg_count, self.stack_top - arg_count)
+                self.stack_top -= arg_count + 1
+                self.push(result)
+
+                return True
+
         self.runtime_error("Can only call functions and classes.")
         return False
-
-        # frame = self.frames[self.frame_count]
-        # self.frame_count += 1
-
-        # frame.function = function
-        # frame.ip = 0
-        # frame.slots = self.stack
 
     def is_falsey(self, val):
         #
@@ -237,7 +250,6 @@ class VM():
                 binary_op(value.bool_val, "<")
 
             elif instruction == chunk.OpCode.OP_ADD:
-                # breakpoint()
                 if self.peek(0).is_string() and self.peek(1).is_string():
                     self.concatenate()
                 elif self.peek(0).is_number() and self.peek(1).is_number():

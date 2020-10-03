@@ -6,12 +6,17 @@ def disassemble_chunk(bytecode, name):
     #
     """
     """
+    if isinstance(name, value.ObjectString):
+        name = "".join(name.chars)
+
     print("\n== {} ==".format(name))
 
     offset = 0
 
     while offset < bytecode.count:
         offset = disassemble_instruction(bytecode, offset)
+
+    print("")
 
 
 def constant_instruction(name, bytecode, offset):
@@ -128,7 +133,7 @@ def convert_value(val):
     """
     if isinstance(val, value.Value):
         if val.is_function():
-            return "".join(val.as_function_name())
+            return val.as_function_name()
         elif val.is_string():
             return "".join(val.as_cstring())
 
