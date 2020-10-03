@@ -822,6 +822,20 @@ class Parser():
         self.consume(scanner.TokenType.TOKEN_SEMICOLON, "Expect ';' after value.")
         self.emit_byte(chunk.OpCode.OP_PRINT)
 
+    def return_statement(self):
+        #
+        """
+        """
+        if self.composer.function_type == FunctionType.TYPE_SCRIPT:
+            self.error("Cannot return from top-level code.")
+
+        if self.match(scanner.TokenType.TOKEN_SEMICOLON):
+            self.emit_return()
+        else:
+            self.expression()
+            self.consume(scanner.TokenType.TOKEN_SEMICOLON, "Expect ';' after return value.")
+            self.emit_byte(chunk.OpCode.OP_RETURN)
+
     def while_statement(self):
         #
         """
@@ -881,6 +895,8 @@ class Parser():
             self.for_statement()
         elif self.match(scanner.TokenType.TOKEN_IF):
             self.if_statement()
+        elif self.match(scanner.TokenType.TOKEN_RETURN):
+            self.return_statemen()
         elif self.match(scanner.TokenType.TOKEN_WHILE):
             self.while_statement()
         elif self.match(scanner.TokenType.TOKEN_LEFT_BRACE):
