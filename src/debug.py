@@ -113,6 +113,8 @@ def disassemble_instruction(bytecode, offset):
         return jump_instruction("OP_JUMP_IF_FALSE", 1, bytecode, offset)
     elif instruction == chunk.OpCode.OP_LOOP:
         return jump_instruction("OP_LOOP", -1, bytecode, offset)
+    elif instruction == chunk.OpCode.OP_CALL:
+        return byte_instruction("OP_CALL", bytecode, offset)
     elif instruction == chunk.OpCode.OP_RETURN:
         return simple_instruction("OP_RETURN", offset)
 

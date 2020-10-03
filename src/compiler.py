@@ -13,7 +13,7 @@ UINT8_COUNT = UINT8_MAX + 1
 
 # yapf: disable
 rule_map = {
-    "TOKEN_LEFT_PAREN":    ["grouping", None,     "PREC_NONE"],
+    "TOKEN_LEFT_PAREN":    ["grouping", "call",   "PREC_CALL"],
     "TOKEN_RIGHT_PAREN":   [None,       None,     "PREC_NONE"],
     "TOKEN_LEFT_BRACE":    [None,       None,     "PREC_NONE"],
     "TOKEN_RIGHT_BRACE":   [None,       None,     "PREC_NONE"],
@@ -256,6 +256,7 @@ class Parser():
         #
         """
         """
+        self.emit_byte(chunk.OpCode.OP_NIL)
         self.emit_byte(chunk.OpCode.OP_RETURN)
 
     def make_constant(self, val):
@@ -435,6 +436,27 @@ class Parser():
 
         self.emit_bytes(chunk.OpCode.OP_DEFINE_GLOBAL, global_var)
 
+    def argument_list(self):
+        # type: () -> int
+        """
+        """
+        arg_count = 0
+
+        if not self.check(scanner.TokenType(TOKEN_RIGHT_PAREN)):
+            while True:
+                self.expression()
+
+                if arg_count == 255:
+                    self.error("Cannot have more than 255 arguments.")
+
+                arg_count += 1
+
+                if not self.match(scanner.TokenType(TOKEN_COMMA)):
+                    break
+
+        self.consume(scanner.TokenType.TOKEN_RIGHT_PAREN, "Expect ')' after arguments.")
+        return arg_count
+
     def and_op(self, can_assign):
         #
         """
@@ -480,6 +502,13 @@ class Parser():
             self.emit_byte(chunk.OpCode.OP_MULTIPLY)
         elif operator_type == scanner.TokenType.TOKEN_SLASH:
             self.emit_byte(chunk.OpCode.OP_DIVIDE)
+
+    def call(can_assign):
+        # type: (bool) -> None
+        """
+        """
+        arg_count = self.argument_list()
+        self.emit_bytes(chunk.OpCode.OP_CALL, arg_count)
 
     def literal(self, can_assign):
         #

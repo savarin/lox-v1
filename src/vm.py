@@ -18,6 +18,7 @@ class CallFrame():
         self.function = None  # type: value.ObjectFunction
         self.ip = 0  # type: int
         self.slots = None  # type: List[value.Value]
+        self.slots_top = 0  # type: int
 
 
 class InterpretResult(Enum):
@@ -85,6 +86,39 @@ class VM():
         """
         """
         return self.stack[self.stack_top - 1 - distance]
+
+    def call(self, function, arg_count):
+        #
+        """
+        """
+        frame = self.frames[self.frame_count]
+        self.frame_count += 1
+
+        frame.function = function
+        frame.ip = 0
+
+        frame.slots = self.stack
+        frame.slots_top = self.stack_top - arg_count - 1
+
+        return True
+
+    def call_value(self, callee, arg_count):
+        #
+        """
+        """
+        if callee.is_obj():
+            if callee.as_obj_type() == value.ObjectType.OBJ_FUNCTION:
+                return self.call(callee.as_function(), arg_count)
+
+        self.runtime_error("Can only call functions and classes.")
+        return False
+
+        # frame = self.frames[self.frame_count]
+        # self.frame_count += 1
+
+        # frame.function = function
+        # frame.ip = 0
+        # frame.slots = self.stack
 
     def is_falsey(self, val):
         #
@@ -203,6 +237,7 @@ class VM():
                 binary_op(value.bool_val, "<")
 
             elif instruction == chunk.OpCode.OP_ADD:
+                # breakpoint()
                 if self.peek(0).is_string() and self.peek(1).is_string():
                     self.concatenate()
                 elif self.peek(0).is_number() and self.peek(1).is_number():
@@ -252,6 +287,14 @@ class VM():
                 offset = read_short()
                 frame.ip -= offset
 
+            elif instruction == chunk.OpCode.OP_CALL:
+                arg_count = read_byte()
+
+                if not self.call_value(self.peek(arg_count), arg_count):
+                    return InterpretResult.INTERPRET_RUNTIME_ERROR
+
+                frame = self.frames[self.frame_count - 1]
+
             elif instruction == chunk.OpCode.OP_RETURN:
                 return InterpretResult.INTERPRET_OK
 
@@ -269,11 +312,12 @@ class VM():
 
         self.push(value.obj_val(function))
 
-        frame = self.frames[self.frame_count]
-        self.frame_count += 1
+        # frame = self.frames[self.frame_count]
+        # self.frame_count += 1
 
-        frame.function = function
-        frame.ip = 0
-        frame.slots = self.stack
+        # frame.function = function
+        # frame.ip = 0
+        # frame.slots = self.stack
+        self.call_value(value.obj_val(function), 0)
 
         return self.run()
