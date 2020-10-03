@@ -56,7 +56,7 @@ class ObjectFunction():
         self.obj = obj
         self.arity = 0
         self.bytecode = None
-        self.name = None  # type: ObjectString
+        self.name = None
 
 
 def new_function(length=8):

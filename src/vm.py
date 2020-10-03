@@ -273,7 +273,6 @@ class VM():
         self.frame_count += 1
 
         frame.function = function
-        frame.function.bytecode.code = function.bytecode.code
         frame.ip = 0
         frame.slots = self.stack
 

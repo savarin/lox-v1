@@ -96,7 +96,7 @@ class FunctionType(Enum):
 
 
 class Compiler():
-    def __init__(self, function_type, enclosing=None):
+    def __init__(self, function_type, enclosing):
         #
         """
         """
@@ -298,7 +298,6 @@ class Parser():
 
         if self.debug_level >= 1 and not self.had_error:
             function_name = function.name or "<script>"
-
             debug.disassemble_chunk(self.current_chunk(), function_name)
 
         return function
@@ -658,7 +657,7 @@ class Parser():
         self.consume(scanner.TokenType.TOKEN_LEFT_PAREN, "Expect '(' after function name.")
 
         if not self.check(scanner.TokenType.TOKEN_RIGHT_PAREN):
-            while self.match(scanner.TokenType.TOKEN_COMMA):
+            while True:
                 self.composer.function.arity += 1
 
                 if self.composer.function.arity > 255:
@@ -666,6 +665,9 @@ class Parser():
 
                 param_constant = self.parse_variable("Expect parameter name.")
                 self.define_variable(param_constant)
+
+                if not self.match(scanner.TokenType.TOKEN_COMMA):
+                    break
 
         self.consume(scanner.TokenType.TOKEN_RIGHT_PAREN, "Expect ')' after function name.")
 
