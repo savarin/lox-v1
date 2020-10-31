@@ -333,7 +333,7 @@ class Parser():
         prefix_rule = self.get_rule(self.previous.token_type).prefix
 
         if prefix_rule is None:
-            self.error("Expect expression")
+            self.error("Expect expression.")
             return None
 
         prefix_rule()
