@@ -314,7 +314,7 @@ def compile(source, bytecode):
 
     parser.advance()
     parser.expression()
-    parser.consume(scanner.TokenType.TOKEN_EOF, "Expect end of expression.")
+    parser.consume(scanner.TokenType.TOKEN_EOF, "Expect end of expression")
     parser.end_compiler()
 
     return not parser.had_error
