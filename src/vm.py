@@ -64,7 +64,8 @@ class VM():
         """
         """
         self.stack_top -= 1
-        return self.stack[self.stack_top]
+        result = self.stack[self.stack_top]
+        return result
 
     def peek(self, distance):
         #
@@ -141,13 +142,15 @@ class VM():
             a = self.pop().as_number()
 
             self.push(value_type(eval("a {} b".format(op))))
-
+            
         while True:
             instruction = read_byte()
 
             if instruction == chunk.OpCode.OP_CONSTANT:
+                # print("PRINT 1", [_.value_as for _ in self.stack if _], self.stack_top)
                 constant = read_constant()
                 self.push(constant)
+                # print("PRINT 2", [_.value_as for _ in self.stack if _], self.stack_top, "\n")
 
             elif instruction == chunk.OpCode.OP_NIL:
                 self.push(value.nil_val())
@@ -159,15 +162,24 @@ class VM():
                 self.push(value.bool_val(False))
 
             elif instruction == chunk.OpCode.OP_POP:
+                # print("PRINT 1", [_.value_as for _ in self.stack if _], self.stack_top)
                 self.pop()
+                # print("PRINT 2", [_.value_as for _ in self.stack if _], self.stack_top, "\n")
 
             elif instruction == chunk.OpCode.OP_GET_LOCAL:
+                # print("PRINT 1", [_.value_as for _ in self.stack if _], self.stack_top)
                 slot = read_byte()
                 self.push(self.stack[slot])
+                # print("PRINT 2", [_.value_as for _ in self.stack if _], self.stack_top, "\n")
 
             elif instruction == chunk.OpCode.OP_SET_LOCAL:
+                # print("PRINT 1", [_.value_as for _ in self.stack if _], self.stack_top)
                 slot = read_byte()
-                self.stack[slot] = self.peek(0)
+                # print("HERE", slot, self.stack[slot].value_as)
+                result = self.peek(0)
+                # print(result.value_as)
+                self.stack[slot] = result
+                # print("PRINT 2", [_.value_as for _ in self.stack if _], self.stack_top, "\n")
 
             elif instruction == chunk.OpCode.OP_GET_GLOBAL:
                 name = read_string()
@@ -236,10 +248,14 @@ class VM():
                 self.push(value.number_val(-self.pop().as_number()))
 
             elif instruction == chunk.OpCode.OP_PRINT:
+                # print("PRINT 1", [_.value_as for _ in self.stack if _], self.stack_top)
+
                 self.result = self.pop()
 
                 if self.expose:
                     self.result.print_value()
+
+                # print("PRINT 2", [_.value_as for _ in self.stack if _], self.stack_top, "\n")
 
             elif instruction == chunk.OpCode.OP_JUMP:
                 offset = read_short()

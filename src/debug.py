@@ -127,4 +127,4 @@ def convert_value(val):
     if isinstance(val, value.Value) and val.is_string():
         return "".join(val.as_cstring()[:-1])
 
-    return val
+    return val.value_as

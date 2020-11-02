@@ -1,3 +1,4 @@
+import functools
 import sys
 from enum import Enum
 from typing import Any
@@ -10,6 +11,17 @@ import value
 UINT8_MAX = 256
 UINT16_MAX = 65536
 UINT8_COUNT = UINT8_MAX + 1
+
+def expose(f):
+    """Print the function signature and return value, implemented where function
+    returns processor state."""
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        print("  {}".format(f.__name__))
+        value = f(*args, **kwargs)
+        return value
+
+    return wrapper
 
 # yapf: disable
 rule_map = {
@@ -120,6 +132,7 @@ class Parser():
         """
         return self.bytecode
 
+    @expose
     def error_at(self, token, message):
         #
         """
@@ -142,18 +155,21 @@ class Parser():
         print(": {}".format(message))
         self.had_error = True
 
+    @expose
     def error(self, message):
         #
         """
         """
         self.error_at(self.previous, message)
 
+    @expose
     def error_at_current(self, message):
         #
         """
         """
         self.error_at(self.current, message)
 
+    @expose
     def advance(self):
         # type: () -> None
         """
@@ -171,6 +187,7 @@ class Parser():
 
             self.error_at_current(self.current.start)
 
+    @expose
     def consume(self, token_type, message):
         # type: (scanner.TokenType, str) -> None
         """
@@ -197,12 +214,14 @@ class Parser():
         """
         return self.current.token_type == token_type
 
+    @expose
     def emit_byte(self, byte):
         #
         """
         """
         self.current_chunk().write_chunk(byte, self.previous.line)
 
+    @expose
     def emit_bytes(self, byte1, byte2):
         #
         """
@@ -210,6 +229,7 @@ class Parser():
         self.emit_byte(byte1)
         self.emit_byte(byte2)
 
+    @expose
     def emit_loop(self, loop_start):
         #
         """
@@ -224,6 +244,7 @@ class Parser():
         self.emit_byte((offset >> 8) & 0xff)
         self.emit_byte(offset & 0xff)
 
+    @expose
     def emit_jump(self, instruction):
         #
         """
@@ -234,12 +255,14 @@ class Parser():
 
         return self.current_chunk().count - 2
 
+    @expose
     def emit_return(self):
         #
         """
         """
         self.emit_byte(chunk.OpCode.OP_RETURN)
 
+    @expose
     def make_constant(self, val):
         #
         """
@@ -252,12 +275,14 @@ class Parser():
 
         return constant
 
+    @expose
     def emit_constant(self, val):
         #
         """
         """
         self.emit_bytes(chunk.OpCode.OP_CONSTANT, self.make_constant(val))
 
+    @expose
     def patch_jump(self, offset):
         #
         """
@@ -271,6 +296,7 @@ class Parser():
         self.current_chunk().code[offset] = jump >> 8 & 0xff
         self.current_chunk().code[offset + 1] = jump & 0xff
 
+    @expose
     def end_compiler(self):
         #
         """
@@ -280,12 +306,14 @@ class Parser():
         if self.debug_level >= 1 and not self.had_error:
             debug.disassemble_chunk(self.current_chunk(), "code")
 
+    @expose
     def begin_scope(self):
         #
         """
         """
         self.composer.scope_depth += 1
 
+    @expose
     def end_scope(self):
         #
         """
@@ -298,6 +326,7 @@ class Parser():
             self.emit_byte(chunk.OpCode.OP_POP)
             self.composer.local_count -= 1
 
+    @expose
     def binary(self, can_assign):
         #
         """
@@ -333,6 +362,7 @@ class Parser():
         elif operator_type == scanner.TokenType.TOKEN_SLASH:
             self.emit_byte(chunk.OpCode.OP_DIVIDE)
 
+    @expose
     def literal(self, can_assign):
         #
         """
@@ -344,6 +374,7 @@ class Parser():
         elif self.previous.token_type == scanner.TokenType.TOKEN_TRUE:
             self.emit_byte(chunk.OpCode.OP_TRUE)
 
+    @expose
     def grouping(self, can_assign):
         #
         """
@@ -354,6 +385,7 @@ class Parser():
             "Expect ')' after expression.",
         )
 
+    @expose
     def number(self, can_assign):
         #
         """
@@ -361,6 +393,7 @@ class Parser():
         val = float(self.previous.source)
         self.emit_constant(value.number_val(val))
 
+    @expose
     def or_op(self, can_assign):
         #
         """
@@ -374,6 +407,7 @@ class Parser():
         self.parse_precedence(Precedence.PREC_OR)
         self.patch_jump(end_jump)
 
+    @expose
     def string(self, can_assign):
         # type: () -> None
         """Extracts relevant section from string, wraps in a ObjectString, wraps
@@ -386,11 +420,18 @@ class Parser():
 
         self.emit_constant(value.obj_val(val))
 
+    @expose
     def named_variable(self, name, can_assign):
         #
         """
         """
+        # print("named_variable", self.composer.local_count)
+        # breakpoint()
+
         arg = self.resolve_local(name)
+
+        # print("named_variable", arg)
+        # breakpoint()
 
         if arg != -1:
             get_op = chunk.OpCode.OP_GET_LOCAL
@@ -406,12 +447,14 @@ class Parser():
         else:
             self.emit_bytes(get_op, arg)
 
+    @expose
     def variable(self, can_assign):
         # type: (bool) -> None
         """
         """
         self.named_variable(self.previous, can_assign)
 
+    @expose
     def unary(self, can_assign):
         #
         """
@@ -427,6 +470,7 @@ class Parser():
         elif operator_type == scanner.TokenType.TOKEN_MINUS:
             self.emit_byte(chunk.OpCode.OP_NEGATE)
 
+    @expose
     def parse_precedence(self, precedence):
         #
         """
@@ -451,6 +495,7 @@ class Parser():
         if can_assign and self.match(scanner.TokenType.TOKEN_EQUAL):
             self.error("Invalid assignment target.")
 
+    @expose
     def identifier_constant(self, name):
         #
         """
@@ -469,6 +514,7 @@ class Parser():
 
         return a.source == b.source
 
+    @expose
     def resolve_local(self, name):
         #
         """
@@ -483,10 +529,14 @@ class Parser():
                 if local.depth == -1:
                     self.error("Cannot read local variable in its own initializer.")
 
+                # print("resolve_local", i)
+                # breakpoint()
+
                 return i
 
         return -1
 
+    @expose
     def add_local(self, name):
         #
         """
@@ -504,6 +554,7 @@ class Parser():
         local.name = name
         local.depth = -1
 
+    @expose
     def declare_variable(self):
         #
         """
@@ -528,6 +579,7 @@ class Parser():
 
         self.add_local(name)
 
+    @expose
     def parse_variable(self, error_message):
         #
         """
@@ -543,6 +595,7 @@ class Parser():
 
         return self.identifier_constant(self.previous)
 
+    @expose
     def mark_initialized(self):
         #
         """
@@ -550,6 +603,7 @@ class Parser():
         local_count = self.composer.local_count - 1
         self.composer.locals[local_count].depth = self.composer.scope_depth
 
+    @expose
     def define_variable(self, global_var):
         #
         """
@@ -563,6 +617,7 @@ class Parser():
 
         self.emit_bytes(chunk.OpCode.OP_DEFINE_GLOBAL, global_var)
 
+    @expose
     def and_op(self, can_assign):
         #
         """
@@ -600,12 +655,14 @@ class Parser():
             precedence=Precedence[rule[2]],
         )
 
+    @expose
     def expression(self):
         #
         """
         """
         self.parse_precedence(Precedence.PREC_ASSIGNMENT)
 
+    @expose
     def block(self):
         #
         """
@@ -616,6 +673,7 @@ class Parser():
 
         self.consume(scanner.TokenType.TOKEN_RIGHT_BRACE, "Expect '}' after block.")
 
+    @expose
     def var_declaration(self):
         #
         """
@@ -631,6 +689,7 @@ class Parser():
 
         self.define_variable(global_var)
 
+    @expose
     def expression_statement(self):
         #
         """
@@ -639,6 +698,7 @@ class Parser():
         self.consume(scanner.TokenType.TOKEN_SEMICOLON, "Expect ';' after expression.")
         self.emit_byte(chunk.OpCode.OP_POP)
 
+    @expose
     def if_statement(self):
         #
         """
@@ -661,6 +721,7 @@ class Parser():
 
         self.patch_jump(else_jump)
 
+    @expose
     def print_statement(self):
         #
         """
@@ -669,6 +730,7 @@ class Parser():
         self.consume(scanner.TokenType.TOKEN_SEMICOLON, "Expect ';' after value.")
         self.emit_byte(chunk.OpCode.OP_PRINT)
 
+    @expose
     def while_statement(self):
         #
         """
@@ -689,6 +751,7 @@ class Parser():
         self.patch_jump(exit_jump)
         self.emit_byte(chunk.OpCode.OP_POP)
 
+    @expose
     def synchronize(self):
         #
         """
@@ -704,6 +767,7 @@ class Parser():
 
             self.advance()
 
+    @expose
     def declaration(self):
         #
         """
@@ -716,6 +780,7 @@ class Parser():
         if self.panic_mode:
             self.synchronize()
 
+    @expose
     def statement(self):
         #
         """
